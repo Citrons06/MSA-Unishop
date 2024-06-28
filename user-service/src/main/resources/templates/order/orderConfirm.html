@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상품 주문 확인</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script src="/static/jwt.js"></script>
+
+</head>
+<body>
+<div class="header">
+    <div th:replace="~{fragments/header :: header(username=${username}, categories=${categories})}"></div>
+</div>
+
+<main class="container mx-auto mt-8">
+    <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4">
+            <h2 class="text-2xl font-bold text-center">주문 확인</h2>
+
+            <!-- 상품 상세 화면에서 주문하기 -->
+            <div th:if="${item != null}">
+                <p class="text-xl text-gray-800 mb-4">상품명: <span th:text="${item.itemName}">상품 이름</span></p>
+                <p class="text-xl text-gray-800 mb-4">가격: <span th:text="${item.price} + '원'"></span></p>
+                <p class="text-xl text-gray-800 mb-4">수량: <input type="number" id="quantity" name="quantity" min="1" value="1" class="w-full mt-2 px-4 py-2 border rounded-md"></p>
+                <p class="text-xl text-gray-800 mb-4">총 금액: <span id="totalPrice" th:text="${item.price} * ${1} + '원'"></span></p>
+                <div class="text-center mt-8">
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">결제하기</button>
+                </div>
+            </div>
+
+            <!-- 장바구니에서 주문하기 -->
+            <div th:if="${cart != null}">
+                <table class="w-full mt-4 border-collapse">
+                    <thead>
+                    <tr>
+                        <th class="border-b py-2">상품명</th>
+                        <th class="border-b py-2">가격</th>
+                        <th class="border-b py-2">수량</th>
+                        <th class="border-b py-2">합계</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${cart.items}">
+                        <td class="border-b py-2" th:text="${item.itemName}"></td>
+                        <td class="border-b py-2" th:text="${item.price} + '원'"></td>
+                        <td class="border-b py-2" th:text="${item.quantity}"></td>
+                        <td class="border-b py-2" th:text="${item.price * item.quantity} + '원'"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="text-right mt-4">
+                    <p class="text-lg"><strong>총 금액:</strong> <span th:text="${cart.totalPrice} + '원'"></span></p>
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">결제하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-gray-200 text-center p-4 text-sm mt-8">
+    © 2024 Uni. All rights reserved.
+</footer>
+
+<script>
+    // 총 금액 업데이트 스크립트
+    const quantityInput = document.getElementById('quantity');
+    if (quantityInput) {
+        quantityInput.addEventListener('input', function() {
+            const price = parseInt(document.querySelector('[th\\:text="${item.price}"]').textContent.replace('원', ''));
+            const quantity = parseInt(this.value);
+            const totalPriceElement = document.getElementById('totalPrice');
+            totalPriceElement.textContent = (price * quantity) + '원';
+        });
+    }
+</script>
+</body>
+</html>

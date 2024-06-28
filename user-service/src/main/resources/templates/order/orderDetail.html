@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 상세 내역</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script src="/static/jwt.js"></script>
+
+</head>
+<body>
+<div class="header">
+    <div th:replace="~{fragments/header :: header(username=${username}, categories=${categories})}"></div>
+</div>
+
+<main class="container mx-auto mt-8">
+    <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4">
+            <h2 class="text-2xl font-bold text-center">주문 상세 내역</h2>
+            <div class="mt-4">
+                <p><strong>주문 번호:</strong> <span th:text="${order.orderId}"></span></p>
+                <p><strong>상품명:</strong> <span th:text="${order.itemName}"></span></p>
+                <p><strong>가격:</strong> <span th:text="${order.price}"></span></p>
+                <p><strong>수량:</strong> <span th:text="${order.count}"></span></p>
+                <p><strong>총 금액:</strong> <span th:text="${order.orderPrice}"></span></p>
+                <p><strong>상태:</strong> <span th:text="${order.orderStatus}"></span></p>
+            </div>
+            <div class="text-center mt-4">
+                <a href="/order/list" class="text-blue-500 hover:underline">목록으로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-gray-200 text-center p-4 text-sm mt-8">
+    © 2024 Uni. All rights reserved.
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 목록</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script src="/static/jwt.js"></script>
+
+</head>
+<body>
+<div class="header">
+    <div th:replace="~{fragments/header :: header(username=${username}, categories=${categories})}"></div>
+</div>
+
+<main class="container mx-auto mt-8">
+    <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4">
+            <h2 class="text-2xl font-bold text-center">주문 목록</h2>
+            <table class="w-full mt-4 border-collapse">
+                <thead>
+                <tr>
+                    <th class="border-b py-2">주문 번호</th>
+                    <th class="border-b py-2">상품명</th>
+                    <th class="border-b py-2">가격</th>
+                    <th class="border-b py-2">수량</th>
+                    <th class="border-b py-2">총 금액</th>
+                    <th class="border-b py-2">상태</th>
+                    <th class="border-b py-2">상세보기</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="order : ${orders}">
+                    <td class="border-b py-2" th:text="${order.orderId}"></td>
+                    <td class="border-b py-2" th:text="${order.itemName}"></td>
+                    <td class="border-b py-2" th:text="${order.price}"></td>
+                    <td class="border-b py-2" th:text="${order.count}"></td>
+                    <td class="border-b py-2" th:text="${order.orderPrice}"></td>
+                    <td class="border-b py-2" th:text="${order.orderStatus}"></td>
+                    <td class="border-b py-2">
+                        <a th:href="@{/order/detail/{orderId}(orderId=${order.orderId})}" class="text-blue-500 hover:underline">상세보기</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-gray-200 text-center p-4 text-sm mt-8">
+    © 2024 Uni. All rights reserved.
+</footer>
+
+</body>
+</html>

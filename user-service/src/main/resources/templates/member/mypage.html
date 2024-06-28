@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script src="/static/jwt.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let successMessage = [[${successMessage}]];
+            if (successMessage) {
+                alert(successMessage);
+            }
+        });
+    </script>
+</head>
+<body>
+<div class="header">
+    <div th:replace="~{fragments/header :: header(username=${username}, categories=${categories})}"></div>
+</div>
+
+<main class="container mx-auto mt-8">
+    <div class="w-full max-w-lg mx-auto overflow-hidden bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4">
+            <h2 class="text-2xl font-bold text-center">내 정보 수정</h2>
+            <form action="/user/mypage" method="post" class="mt-4" th:object="${member}">
+                <input type="hidden" name="_method" value="PATCH"/>
+                <div>
+                    <label class="block">연락처</label>
+                    <input type="text" placeholder="연락처" name="memberTel" th:field="*{memberTel}"
+                           class="w-full mt-2 px-4 py-2 border rounded-md focus:border-blue-400" required>
+                </div>
+                <div class="mt-4">
+                    <label class="block">도시</label>
+                    <input type="text" placeholder="도시" name="city" th:field="*{city}"
+                           class="w-full mt-2 px-4 py-2 border rounded-md focus:border-blue-400" required>
+                </div>
+                <div class="mt-4">
+                    <label class="block">거리</label>
+                    <input type="text" placeholder="거리" name="street" th:field="*{street}"
+                           class="w-full mt-2 px-4 py-2 border rounded-md focus:border-blue-400" required>
+                </div>
+                <div class="mt-4">
+                    <label class="block">우편번호</label>
+                    <input type="text" placeholder="우편번호" name="zipcode" th:field="*{zipcode}"
+                           class="w-full mt-2 px-4 py-2 border rounded-md focus:border-blue-400" required>
+                </div>
+                <div>
+                    <label class="block">비밀번호</label>
+                    <input type="password" placeholder="비밀번호" name="password" th:field="*{password}"
+                           class="w-full mt-2 px-4 py-2 border rounded-md focus:border-blue-400" required>
+                </div>
+                <button type="submit" class="w-full mt-4 bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded focus:outline-none">업데이트</button>
+            </form>
+
+            <div class="mt-8">
+                <ul class="mt-4">
+                    <li class="mt-2">
+                        <a href="/order/list" class="w-full block bg-blue-200 hover:bg-blue-300 text-center py-2 px-4 rounded">주문 내역</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-gray-200 text-center p-4 text-sm mt-8">
+    © 2024 Uni. All rights reserved.
+</footer>
+
+</body>
+</html>

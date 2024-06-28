@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Detail</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <script src="/static/jwt.js"></script>
+</head>
+<body class="bg-gray-100">
+<div class="header">
+    <div th:replace="~{fragments/header :: header(username=${username}, categories=${categories})}"></div>
+</div>
+
+<main class="container mx-auto mt-8">
+    <div class="bg-white p-8 rounded-lg shadow-lg flex flex-col md:flex-row">
+        <div class="md:w-1/2 p-4">
+            <img th:if="${item.itemImgList.size() > 0}" th:src="@{|/images/${item.itemImgList[0].imgName}|}" alt="상품 이미지" class="object-contain rounded-lg shadow">
+        </div>
+        <div class="md:w-1/2 p-4 flex flex-col justify-between">
+            <div>
+                <h2 class="text-3xl font-bold mb-2 text-blue-800" th:text="${item.itemName}">상품 이름</h2>
+                <p class="text-xl text-gray-800 mb-4">가격: <span th:text="${item.price} + '원'">가격</span></p>
+                <p class="text-xl text-gray-800 mb-4">판매 상태: <span th:text="${item.itemSellStatus}">판매 상태</span></p>
+                <div class="mb-4">
+                    <label for="count" class="block text-gray-700">수량</label>
+                    <input type="number" id="count" name="count" min="1" value="1" class="w-full mt-2 px-4 py-2 border rounded-md">
+                </div>
+            </div>
+            <div class="space-y-2 mt-4">
+                <button onclick="orderNow('${item.id}', '${item.itemName}', '${item.price}')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                    Order Now
+                </button>
+                <button onclick="addToCart('${item.id}', '${item.itemName}', '${item.price}')" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                    Add to Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-gray-200 text-center p-4 text-sm mt-8">
+    © 2024 Uni. All rights reserved.
+</footer>
+
+<script>
+    function addToCart(id, name, price) {
+        const count = document.getElementById('count').value;
+        // Send a request to add the item to the cart
+        fetch('/api/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ itemId: id, itemName: name, price: price, count: count })
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(`${name} 상품이 장바구니에 담겼습니다.`);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
+    function orderNow(id, name, price, count) {
+        const cnt = document.getElementById('count').value;
+        // Redirect to the order page with the item details
+        window.location.href = `/order/now?itemId=${id}&itemName=${name}&price=${price}&count=${cnt}`;
+    }
+</script>
+</body>
+</html>

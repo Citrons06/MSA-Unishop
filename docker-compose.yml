@@ -1,0 +1,99 @@
+services:
+  # eureka-server:
+  #   image: eureka:latest
+  #   container_name: eureka-server
+  #   ports:
+  #     - "8761:8761"
+  #   env_file:
+  #     - eureka/eureka.env
+
+  # api-gateway:
+  #   build: ./api-gateway
+  #   ports:
+  #     - "8080:8080"
+  #   env_file:
+  #     - api-gateway/api-gateway.env
+  #   depends_on:
+  #     - db-gateway
+  #     - eureka-server
+
+  # product-service:
+  #   build: ./product-service
+  #   ports:
+  #     - "8083:8080"
+  #   env_file:
+  #     - product-service/product.env
+  #   depends_on:
+  #     - db-product
+  #     - redis
+  #     - eureka-server
+
+  # user-service:
+  #   build: ./user-service
+  #   ports:
+  #     - "8081:8080"
+  #   env_file:
+  #     - user-service/user.env
+  #   depends_on:
+  #     - db-user
+  #     - redis
+  #     - eureka-server
+
+  # order-service:
+  #   build: ./order-service
+  #   ports:
+  #     - "8082:8080"
+  #   env_file:
+  #     - order-service/order.env
+  #   depends_on:
+  #     - db-order
+  #     - redis
+  #     - eureka-server
+
+  # db-gateway:
+  #   image: postgres:latest
+  #   container_name: db-gateway
+  #   env_file:
+  #     - api-gateway/db.env
+  #   ports:
+  #     - 5432:5432
+  #   volumes:
+  #     - ./data/db-gateway:/var/lib/postgresql/data
+
+  db-user:
+    image: postgres:latest
+    container_name: db-user
+    env_file:
+      - user-service/db.env
+    ports:
+      - 5433:5432
+    volumes:
+      - ./data/db-user:/var/lib/postgresql/data
+
+  db-order:
+    image: postgres:latest
+    container_name: db-order
+    env_file:
+      - order-service/db.env
+    ports:
+      - 5434:5432
+    volumes:
+      - ./data/db-order:/var/lib/postgresql/data
+
+  db-product:
+    image: postgres:latest
+    container_name: db-product
+    env_file:
+      - product-service/db.env
+    ports:
+      - 5435:5432
+    volumes:
+      - ./data/db-product:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: db-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data

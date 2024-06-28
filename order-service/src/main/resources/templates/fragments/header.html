@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <script src="/static/jwt.js"></script>
+</head>
+<body>
+<div th:fragment="header (username, categories)" class="header">
+    <header class="bg-blue-600 p-4 text-white">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/"><h1 class="text-xl">Uni</h1></a>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li th:if="${username == null}"><a href="/user/login-page" class="hover:text-blue-300">로그인</a></li>
+                    <li th:if="${username == null}"><a href="/user/signup" class="hover:text-blue-300">회원가입</a></li>
+                    <li th:if="${username != null}"><a href="/user/mypage" class="hover:text-blue-300">마이페이지</a></li>
+                    <li th:if="${username != null}"><a href="/cart" class="hover:text-blue-300">장바구니</a></li>
+                    <li th:if="${username != null}">
+                        <a href="#" onclick="logout()" class="hover:text-blue-300">로그아웃</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="bg-blue-700">
+            <div class="container mx-auto py-2">
+                <ul class="flex space-x-4">
+                    <li th:each="category : ${categories}">
+                        <a th:href="@{/item/list(category=${category.id})}" th:text="${category.categoryName}" class="hover:text-blue-300"></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+</div>
+<script>
+    function logout() {
+        // 토큰 삭제
+        const refreshToken = localStorage.getItem('refreshToken');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+
+        // 로그아웃 요청을 서버에 전송
+        fetch('/user/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refreshToken: refreshToken })
+        }).then(response => {
+            if (response.ok) {
+                window.location.href = '/';
+            } else {
+                console.error('Logout failed');
+            }
+        });
+    }
+</script>
+</body>
+</html>
