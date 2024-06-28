@@ -1,6 +1,7 @@
 package my.userservice.member.service;
 
 
+import my.userservice.adapter.OrderDto;
 import my.userservice.member.dto.MemberRequestDto;
 import my.userservice.member.dto.MemberResponseDto;
 
@@ -14,4 +15,6 @@ public interface MemberService {
     MemberResponseDto findMember(String username);
 
     MemberResponseDto getMember(String username);
+
+    OrderDto getOrder(String username);
 }

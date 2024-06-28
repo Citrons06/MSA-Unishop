@@ -4,15 +4,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.userservice.cart.dto.AddItemCartRequest;
+import my.userservice.cart.dto.CartItemResponseDto;
 import my.userservice.cart.dto.UpdateCartItemRequest;
 import my.userservice.cart.entity.Cart;
 import my.userservice.cart.service.CartService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
-@RequestMapping("/api/internal/cart")
+@RequestMapping("/api/cart")
 @RequiredArgsConstructor
 public class CartApiController {
 
@@ -20,10 +23,10 @@ public class CartApiController {
 
     // 장바구니 조회
     @GetMapping
-    public ResponseEntity<Cart> getCart(HttpServletRequest request) {
+    public ResponseEntity<List<CartItemResponseDto>> getCart(HttpServletRequest request) {
         // 헤더의 username 추출
         String username = request.getHeader("X-User-Name");
-        Cart cart = cartService.getCart(username);
+        List<CartItemResponseDto> cart = cartService.getCart(username);
         return ResponseEntity.ok(cart);
     }
 

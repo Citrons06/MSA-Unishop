@@ -1,10 +1,8 @@
 package my.userservice.adapter;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class ProductDto {
     private Long itemId;
     private String itemName;

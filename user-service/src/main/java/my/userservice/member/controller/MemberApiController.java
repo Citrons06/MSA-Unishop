@@ -4,6 +4,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.userservice.adapter.OrderDto;
+import my.userservice.cart.dto.CartItemResponseDto;
+import my.userservice.cart.entity.Cart;
+import my.userservice.cart.service.CartService;
 import my.userservice.member.dto.LoginRequestDto;
 import my.userservice.member.dto.LoginResponseDto;
 import my.userservice.member.dto.MemberRequestDto;
@@ -15,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -27,6 +32,7 @@ public class MemberApiController {
 
     private final MemberServiceImpl memberService;
     private final AuthService authService;
+    private final CartService cartService;
 
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody MemberRequestDto memberRequestDto) {
@@ -74,6 +80,21 @@ public class MemberApiController {
         } catch (IllegalArgumentException e) {
             log.error("Invalid refresh token", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    // 장바구니, 주문 내역 가져오기
+    @GetMapping("/mypage")
+    public ResponseEntity<?> getMember(HttpServletRequest request) {
+        try {
+            String username = request.getHeader("X-User-Name");
+            List<CartItemResponseDto> cart = cartService.getCart(username);
+            OrderDto order = memberService.getOrder(username);
+
+            return ResponseEntity.ok().body(Map.of("cart", cart, "order", order));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\": \"회원 정보 조회에 실패하였습니다. 다시 시도해 주세요.\"}");
         }
     }
 

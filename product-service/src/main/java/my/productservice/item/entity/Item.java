@@ -59,19 +59,14 @@ public class Item extends BaseEntity {
         this.itemImgList.addAll(newItemImgs);
     }
 
-    public void decreaseStock(int quantity) {
-        if (this.quantity < quantity) {
-            throw new IllegalArgumentException("재고 수량이 부족합니다.");
-        }
-        this.quantity -= quantity;
-
-        if (this.quantity == 0) {
-            this.itemSellStatus = ItemSellStatus.SOLD_OUT;
-        }
-    }
-
     public void updateStock(int quantity) {
-        this.quantity = quantity;
+        if (this.quantity == null) {
+            this.quantity = 0;
+        }
+        if (this.quantity + quantity < 0) {
+            throw new IllegalArgumentException("재고가 부족합니다.");
+        }
+        this.quantity += quantity;
     }
 
     public void updateItemSellCount(int quantity) {

@@ -15,7 +15,7 @@ public interface ItemService {
 
     ItemResponseDto getItem(Long id);
 
-    void updateItemStock(Long id, int count);
+    void updateItemSellCount(Long id, int quantity);
 
-    void updateItemSellCount(Long id, int price);
+    ItemResponseDto updateQuantity(Long itemId, int quantity);
 }

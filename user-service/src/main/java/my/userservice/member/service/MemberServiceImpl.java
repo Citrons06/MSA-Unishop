@@ -2,6 +2,8 @@ package my.userservice.member.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.userservice.adapter.OrderAdapter;
+import my.userservice.adapter.OrderDto;
 import my.userservice.member.dto.MemberRequestDto;
 import my.userservice.member.dto.MemberResponseDto;
 import my.userservice.member.entity.Member;
@@ -25,6 +27,7 @@ public class MemberServiceImpl implements MemberService {
     private final EmailService emailService;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final OrderAdapter orderAdapter;
 
     @Override
     public void signup(MemberRequestDto memberRequestDto) {
@@ -94,5 +97,11 @@ public class MemberServiceImpl implements MemberService {
     public MemberResponseDto getMember(String username) {
         Member member = memberRepository.findByUsername(username);
         return new MemberResponseDto(member);
+    }
+
+    @Override
+    public OrderDto getOrder(String username) {
+        Member member = memberRepository.findByUsername(username);
+        return orderAdapter.orderList(member.getId());
     }
 }

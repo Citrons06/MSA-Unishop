@@ -84,10 +84,6 @@ public class Order {
         this.orderStatus = OrderStatus.RETURN_COMPLETE;
     }
 
-    public void completeDelivery() {
-        this.orderStatus = OrderStatus.DELIVERED;
-    }
-
     // 주문의 총 금액 계산
     public int getTotalPrice() {
         return orderItems.stream().mapToInt(OrderItem::getTotalPrice).sum();

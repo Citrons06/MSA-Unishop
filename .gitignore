@@ -22,6 +22,7 @@ bin/
 *.iws
 *.iml
 *.ipr
+*.env
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
@@ -38,7 +39,8 @@ out/
 
 application.yml
 data/**
-.env
 gradlew
 gradlew.bat
 settings.gradle
+gradle
+.gitmodules

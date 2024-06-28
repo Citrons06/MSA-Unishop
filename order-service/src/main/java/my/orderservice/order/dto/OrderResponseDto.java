@@ -15,7 +15,7 @@ public class OrderResponseDto {
     private String itemName;
     private int price;
     private int count;
-    private OrderStatus orderStatus;
+    private String orderStatus;
     private int orderPrice;
 
     public OrderResponseDto(Order order) {
@@ -27,7 +27,7 @@ public class OrderResponseDto {
             this.itemName = orderItem.getItemName();
             this.price = orderItem.getOrderPrice();
             this.count = orderItem.getCount();
-            this.orderStatus = order.getOrderStatus();
+            this.orderStatus = order.getOrderStatus().name();
         }
 
         this.orderPrice = order.getTotalPrice();
