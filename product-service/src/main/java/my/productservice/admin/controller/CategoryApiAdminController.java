@@ -13,7 +13,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/internal/product/admin/category")
+@RequestMapping("/api/product/admin/category")
 @RequiredArgsConstructor
 public class CategoryApiAdminController {
 
@@ -25,8 +25,8 @@ public class CategoryApiAdminController {
         return ResponseEntity.ok().body(categoryResponseDto);
     }
 
-    @PutMapping("//update/{categoryId}")
-    public ResponseEntity<?> updateCategory(@PathVariable Long categoryId,
+    @PutMapping("/update/{categoryId}")
+    public ResponseEntity<?> updateCategory(@PathVariable("categoryId") Long categoryId,
                                             @RequestBody CategoryResponseDto categoryResponseDto) {
         CategoryResponseDto categoryResponseDto1 = categoryAdminService.updateCategory(categoryId, categoryResponseDto);
         return ResponseEntity.ok().body(categoryResponseDto1);

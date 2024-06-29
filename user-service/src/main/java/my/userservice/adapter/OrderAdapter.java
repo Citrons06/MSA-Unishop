@@ -2,10 +2,13 @@ package my.userservice.adapter;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "orderClient", url = "${order-service.url}")
+import java.util.List;
+
+@FeignClient(name = "order-service")
 public interface OrderAdapter {
 
-    @GetMapping("/api/internal/order/list")
-    OrderDto orderList(Long memberId);
+    @GetMapping("/api/order/internal/list")
+    List<OrderDto> orderList(@RequestParam("username") String username);
 }

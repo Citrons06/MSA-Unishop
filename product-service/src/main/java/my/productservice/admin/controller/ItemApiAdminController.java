@@ -16,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/internal/product/admin/item")
+@RequestMapping("/api/product/admin")
 @RequiredArgsConstructor
 public class ItemApiAdminController {
 
@@ -24,8 +24,8 @@ public class ItemApiAdminController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createItem(@ModelAttribute ItemRequestDto itemRequestDto,
-                                        @RequestPart List<MultipartFile> itemImgFileList,
-                                        Long categoryId) {
+                                        @RequestPart("itemImgFileList") List<MultipartFile> itemImgFileList,
+                                        @RequestParam("categoryId") Long categoryId) {
         try {
             itemRequestDto.setItemImgFileList(itemImgFileList);
             itemRequestDto.setCategoryId(categoryId);
@@ -44,10 +44,10 @@ public class ItemApiAdminController {
     }
 
     @PutMapping("/update/{itemId}")
-    public ResponseEntity<?> updateItem(@PathVariable Long itemId,
+    public ResponseEntity<?> updateItem(@PathVariable("itemId") Long itemId,
                                         @ModelAttribute ItemRequestDto itemRequestDto,
-                                        List<MultipartFile> itemImgFileList,
-                                        Long categoryId) {
+                                        @RequestParam("itemImgFileList") List<MultipartFile> itemImgFileList,
+                                        @RequestParam("categoryId") Long categoryId) {
         try {
             ItemResponseDto item = itemAdminService.updateItem(itemId, itemRequestDto, itemImgFileList, categoryId);
             return ResponseEntity.ok().body(item);

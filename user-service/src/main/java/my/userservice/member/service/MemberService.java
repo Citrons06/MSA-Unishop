@@ -5,6 +5,8 @@ import my.userservice.adapter.OrderDto;
 import my.userservice.member.dto.MemberRequestDto;
 import my.userservice.member.dto.MemberResponseDto;
 
+import java.util.List;
+
 public interface MemberService {
     void signup(MemberRequestDto memberRequestDto);
 
@@ -16,5 +18,5 @@ public interface MemberService {
 
     MemberResponseDto getMember(String username);
 
-    OrderDto getOrder(String username);
+    List<OrderDto> getOrder(String username);
 }

@@ -1,5 +1,6 @@
 package my.userservice.member.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.userservice.adapter.OrderAdapter;
@@ -14,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -58,7 +61,13 @@ public class MemberServiceImpl implements MemberService {
         String storedToken = (String) redisTemplate.opsForValue().get("emailToken:" + email);
         if (storedToken != null && storedToken.equals(token) && jwtUtil.validateToken(token)) {
             // Redis에서 저장된 회원 정보 가져오기
-            MemberRequestDto memberRequestDto = (MemberRequestDto) redisTemplate.opsForValue().get("signupRequest:" + email);
+            Object signupRequest = redisTemplate.opsForValue().get("signupRequest:" + email);
+
+            MemberRequestDto memberRequestDto = null;
+            if (signupRequest instanceof LinkedHashMap) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                memberRequestDto = objectMapper.convertValue(signupRequest, MemberRequestDto.class);
+            }
 
             // 회원 정보를 데이터베이스에 저장
             Member member = null;
@@ -100,8 +109,8 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public OrderDto getOrder(String username) {
+    public List<OrderDto> getOrder(String username) {
         Member member = memberRepository.findByUsername(username);
-        return orderAdapter.orderList(member.getId());
+        return orderAdapter.orderList(member.getUsername());
     }
 }

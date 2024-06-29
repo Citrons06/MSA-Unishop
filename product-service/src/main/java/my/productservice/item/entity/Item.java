@@ -60,6 +60,9 @@ public class Item extends BaseEntity {
     }
 
     public void updateStock(int quantity) {
+        if (quantity == 0) {
+            throw new IllegalArgumentException("상품을 1개 이상 선택해 주세요.");
+        }
         if (this.quantity == null) {
             this.quantity = 0;
         }

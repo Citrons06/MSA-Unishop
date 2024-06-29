@@ -1,11 +1,11 @@
 services:
-  # eureka-server:
-  #   image: eureka:latest
-  #   container_name: eureka-server
-  #   ports:
-  #     - "8761:8761"
-  #   env_file:
-  #     - eureka/eureka.env
+   #eureka-server:
+   #  image: eureka:latest
+   #  container_name: eureka-server
+   #  ports:
+   #    - "8761:8761"
+   #  env_file:
+   #    - eureka/eureka.env
 
   # api-gateway:
   #   build: ./api-gateway

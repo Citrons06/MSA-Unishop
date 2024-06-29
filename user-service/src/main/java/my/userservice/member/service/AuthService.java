@@ -29,6 +29,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponseDto login(LoginRequestDto loginRequestDto, HttpServletResponse response) {
+        log.info("로그인 시도");
         String username = loginRequestDto.getUsername();
         String password = loginRequestDto.getPassword();
 
@@ -39,8 +40,10 @@ public class AuthService {
                 throw new IllegalArgumentException("회원 정보가 일치하지 않습니다.");
             }
 
-            String accessToken = jwtUtil.generateAccessToken(username);
-            String refreshToken = jwtUtil.generateRefreshToken(username);
+
+            String role = member.getRole().name(); // 역할 가져오기
+            String accessToken = jwtUtil.generateAccessToken(username, role);
+            String refreshToken = jwtUtil.generateRefreshToken(username, role);
 
             refreshTokenRepository.save(new RefreshToken(username, refreshToken));
 
@@ -55,9 +58,12 @@ public class AuthService {
             refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60 * 1000);  // 7일
 
             response.addCookie(accessTokenCookie);
-            response.addCookie(refreshTokenCookie);
 
-            return new LoginResponseDto(username, accessToken, refreshToken);
+            response.setHeader("Authorization", "Bearer " + accessToken);
+            response.setHeader("X-User-Name", username);
+            response.setHeader("X-User-Role", role);
+
+            return new LoginResponseDto(username, accessToken);
 
         } catch (Exception e) {
             log.error("Error authenticating user", e);
@@ -85,7 +91,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid refresh token");
         }
 
-        String accessToken = jwtUtil.generateAccessToken(username);
+        String accessToken = jwtUtil.generateAccessToken(username, claims.get("role", String.class));
         return new AuthResponse(accessToken);
     }
 }

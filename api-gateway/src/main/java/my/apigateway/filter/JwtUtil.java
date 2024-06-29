@@ -1,4 +1,4 @@
-package my.apigateway.jwt;
+package my.apigateway.filter;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -6,15 +6,13 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collections;
 
 @Slf4j
 @Component
@@ -37,6 +35,7 @@ public class JwtUtil {
             log.debug("Token is valid");
             return true;
         } catch (JwtException e) {
+            log.info("token: {}", token);
             log.error("Token validation error: {}", e.getMessage());
             return false;
         }
@@ -45,24 +44,17 @@ public class JwtUtil {
     public String getUsernameFromToken(String token) {
         try {
             Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-            return claims.getSubject();  // username
+            return claims.getSubject();
         } catch (JwtException e) {
             log.error("Error parsing token", e);
             return null;
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public List<SimpleGrantedAuthority> getAuthoritiesFromToken(String token) {
-        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-        List<String> roles = (List<String>) claims.get("roles");
-        return roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
-    }
-
-    public String resolveToken(HttpServletRequest req) {
-        String bearerToken = req.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+    public String resolveToken(ServerHttpRequest request) {
+        String token = request.getHeaders().getFirst("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring(7);
         }
         return null;
     }
@@ -70,7 +62,7 @@ public class JwtUtil {
     public String getRoleFromToken(String token) {
         try {
             Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-            return (String) claims.get("role");  // role 정보 가져오기
+            return claims.get("role", String.class);
         } catch (JwtException e) {
             log.error("Error parsing token", e);
             return null;

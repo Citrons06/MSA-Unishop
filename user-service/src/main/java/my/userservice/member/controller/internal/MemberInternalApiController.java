@@ -7,20 +7,18 @@ import my.userservice.member.service.MemberService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/internal/user")
 public class MemberInternalApiController {
 
     private final MemberService memberService;
 
-    @GetMapping("{username}")
-    public ResponseEntity<?> getMember(HttpServletRequest request) {
+    @GetMapping("/api/user/internal/{username}")
+    public ResponseEntity<?> getMember(@PathVariable("username") String username, HttpServletRequest request) {
         try {
-            String username = request.getHeader("X-User-Name");
             MemberResponseDto memberResponseDto = memberService.getMember(username);
             return ResponseEntity.ok().body(memberResponseDto);
         } catch (Exception e) {

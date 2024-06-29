@@ -1,5 +1,6 @@
 package my.productservice.item.service;
 
+import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.item.entity.Item;
@@ -49,15 +50,26 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public void updateItemSellCount(Long id, int quantity) {
         Item item = itemRepository.findItemById(id);
+        if (item == null) {
+            throw new NotFoundException("Item not found");
+        }
         item.updateItemSellCount(quantity);
         itemRepository.save(item);
     }
 
     @Override
+    @Transactional
     public ItemResponseDto updateQuantity(Long itemId, int quantity) {
         Item item = itemRepository.findItemById(itemId);
+        if (item == null) {
+            throw new NotFoundException("Item not found");
+        }
+        if (quantity == 0) {
+            throw new IllegalArgumentException("Quantity cannot be zero");
+        }
         item.updateStock(quantity);
         itemRepository.save(item);
         return new ItemResponseDto(item);

@@ -5,8 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.userservice.cart.dto.AddItemCartRequest;
 import my.userservice.cart.dto.CartItemResponseDto;
+import my.userservice.cart.dto.CartResponseDto;
 import my.userservice.cart.dto.UpdateCartItemRequest;
-import my.userservice.cart.entity.Cart;
 import my.userservice.cart.service.CartService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,22 +27,23 @@ public class CartApiController {
         // 헤더의 username 추출
         String username = request.getHeader("X-User-Name");
         List<CartItemResponseDto> cart = cartService.getCart(username);
+        log.info("username: {}, role: {}", request.getHeader("X-User-Name"), request.getHeader("X-User-Role"));
         return ResponseEntity.ok(cart);
     }
 
     // 장바구니에 상품 추가
     @PostMapping("/add")
-    public ResponseEntity<Cart> addItemToCart(HttpServletRequest request, @RequestBody AddItemCartRequest addItemCartRequest) {
+    public ResponseEntity<CartResponseDto> addItemToCart(HttpServletRequest request, @RequestBody AddItemCartRequest addItemCartRequest) {
         String username = request.getHeader("X-User-Name");
-        Cart cart = cartService.addCart(username, addItemCartRequest);
+        CartResponseDto cart = cartService.addCart(username, addItemCartRequest);
         return ResponseEntity.ok(cart);
     }
 
     // 장바구니에서 특정 상품 삭제
     @DeleteMapping("/remove/{itemId}")
-    public ResponseEntity<Cart> removeItemFromCart(HttpServletRequest request, @PathVariable Long itemId) {
+    public ResponseEntity<CartResponseDto> removeItemFromCart(HttpServletRequest request, @PathVariable Long itemId) {
         String username = request.getHeader("X-User-Name");
-        Cart cart = cartService.removeItem(username, itemId);
+        CartResponseDto cart = cartService.removeItem(username, itemId);
         return ResponseEntity.ok(cart);
     }
 
@@ -56,11 +57,11 @@ public class CartApiController {
 
     // 장바구니에 담긴 상품의 수량 업데이트
     @PutMapping("/update/{itemId}")
-    public ResponseEntity<Cart> updateItemQuantity(HttpServletRequest request,
+    public ResponseEntity<CartResponseDto> updateItemQuantity(HttpServletRequest request,
                                                    @PathVariable Long itemId,
                                                    @RequestBody UpdateCartItemRequest updateCartItemRequest) {
         String username = request.getHeader("X-User-Name");
-        Cart cart = cartService.updateCartItem(username, updateCartItemRequest);
+        CartResponseDto cart = cartService.updateCartItem(username, updateCartItemRequest);
         return ResponseEntity.ok(cart);
     }
 }

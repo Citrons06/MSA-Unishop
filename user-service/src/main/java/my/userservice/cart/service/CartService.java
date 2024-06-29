@@ -6,6 +6,7 @@ import my.userservice.adapter.ProductAdapter;
 import my.userservice.adapter.ProductDto;
 import my.userservice.cart.dto.AddItemCartRequest;
 import my.userservice.cart.dto.CartItemResponseDto;
+import my.userservice.cart.dto.CartResponseDto;
 import my.userservice.cart.dto.UpdateCartItemRequest;
 import my.userservice.cart.entity.Cart;
 import my.userservice.cart.entity.CartItem;
@@ -29,6 +30,7 @@ public class CartService {
 
     // 장바구니 조회
     public List<CartItemResponseDto> getCart(String username) {
+        log.info("Entering getCart with username: {}", username);
         Cart cart = redisUtils.get(username, Cart.class);
 
         if (cart == null) {
@@ -47,7 +49,7 @@ public class CartService {
     }
 
     // 장바구니에 상품 추가
-    public Cart addCart(String username, AddItemCartRequest addItemCartRequest) {
+    public CartResponseDto addCart(String username, AddItemCartRequest addItemCartRequest) {
         // 상품 정보를 상품 서비스에서 조회
         ProductDto productDto = productAdapter.getItem(addItemCartRequest.getItemId());
 
@@ -87,11 +89,11 @@ public class CartService {
 
         redisUtils.put(username, cart);
         redisUtils.setExpire(username, CART_TTL, TimeUnit.DAYS); // TTL 설정
-        return cart;
+        return new CartResponseDto(cart);
     }
 
     // 장바구니에서 특정 상품 제거
-    public Cart removeItem(String username, Long itemId) {
+    public CartResponseDto removeItem(String username, Long itemId) {
         Cart cart = redisUtils.get(username, Cart.class);
 
         if (cart != null) {
@@ -100,7 +102,7 @@ public class CartService {
             redisUtils.setExpire(username, CART_TTL, TimeUnit.DAYS); // TTL 설정
         }
 
-        return cart;
+        return new CartResponseDto(cart);
     }
 
     // 장바구니 초기화
@@ -109,7 +111,7 @@ public class CartService {
     }
 
     // 장바구니 상품 수량 업데이트
-    public Cart updateCartItem(String username, UpdateCartItemRequest updateCartItemRequest) {
+    public CartResponseDto updateCartItem(String username, UpdateCartItemRequest updateCartItemRequest) {
         Cart cart = redisUtils.get(username, Cart.class);
 
         if (cart != null) {
@@ -125,6 +127,6 @@ public class CartService {
             }
         }
 
-        return cart;
+        return new CartResponseDto(cart);
     }
 }

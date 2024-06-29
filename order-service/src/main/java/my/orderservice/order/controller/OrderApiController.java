@@ -22,8 +22,8 @@ public class OrderApiController {
     // 주문 전체 내역 조회
     @GetMapping("/list")
     public ResponseEntity<?> orderList(HttpServletRequest request,
-                                       @RequestParam(defaultValue = "0") int page,
-                                       @RequestParam(defaultValue = "10") int size) {
+                                       @RequestParam(name = "page", defaultValue = "0") int page,
+                                       @RequestParam(name = "size", defaultValue = "10") int size) {
         String username = request.getHeader("X-User-Name");
         List<OrderResponseDto> orders = orderService.getOrderList(username, page, size);
         return ResponseEntity.ok(orders);
@@ -44,13 +44,13 @@ public class OrderApiController {
     }
 
     @PostMapping("/cancel/{orderId}")
-    public ResponseEntity<String> cancelOrder(@PathVariable Long orderId) {
+    public ResponseEntity<String> cancelOrder(@PathVariable("orderId") Long orderId) {
         orderService.cancelOrder(orderId);
-        return ResponseEntity.ok("주문이 취소되었습니다..");
+        return ResponseEntity.ok("주문이 취소되었습니다.");
     }
 
     @PostMapping("/return/{orderId}")
-    public ResponseEntity<String> returnOrder(@PathVariable Long orderId) {
+    public ResponseEntity<String> returnOrder(@PathVariable("orderId") Long orderId) {
         orderService.returnOrder(orderId);
         return ResponseEntity.ok("반품 신청을 완료하였습니다.");
     }

@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import my.orderservice.common.entity.BaseEntity;
 
+@Slf4j
 @Getter
 @Entity
 @NoArgsConstructor
@@ -35,6 +37,8 @@ public class OrderItem extends BaseEntity {
         this.itemName = itemName;
         this.count = quantity;
         this.orderPrice = price;
+
+        log.info("OrderItem created with itemId: {}, itemName: {}, quantity: {}, price: {}", this.itemId, this.itemName, this.count, this.orderPrice);
     }
 
 

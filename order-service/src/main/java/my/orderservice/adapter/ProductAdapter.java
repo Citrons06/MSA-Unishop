@@ -2,16 +2,15 @@ package my.orderservice.adapter;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "productClient", url = "${product-service.url}")
+@FeignClient(name = "product-service")
 public interface ProductAdapter {
 
-    @GetMapping("/api/internal/product/{itemId}")
-    ProductDto getItem(@PathVariable("itemId") Long itemId);
+    @GetMapping("/api/product/internal")
+    ProductDto getItem(@RequestParam("itemId") Long itemId);
 
-    @PatchMapping("/api/internal/product/update-quantity/{itemId}")
-    void updateQuantity(@PathVariable("itemId") Long itemId, int quantity);
+    @PutMapping("/api/product/internal/update-quantity")
+    void updateQuantity(@RequestParam("itemId") Long itemId, @RequestParam("quantity") int quantity);
 }

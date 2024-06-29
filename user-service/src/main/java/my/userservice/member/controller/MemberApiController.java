@@ -42,7 +42,7 @@ public class MemberApiController {
     }
 
     @GetMapping("/verify-email")
-    public ResponseEntity<?> verifyEmail(@RequestParam String token, @RequestParam String email) {
+    public ResponseEntity<?> verifyEmail(@RequestParam("token") String token, @RequestParam("email") String email) {
         try {
             if (memberService.verifyEmail(email, token)) {
                 HttpHeaders headers = new HttpHeaders();
@@ -83,13 +83,12 @@ public class MemberApiController {
         }
     }
 
-    // 장바구니, 주문 내역 가져오기
     @GetMapping("/mypage")
     public ResponseEntity<?> getMember(HttpServletRequest request) {
         try {
             String username = request.getHeader("X-User-Name");
             List<CartItemResponseDto> cart = cartService.getCart(username);
-            OrderDto order = memberService.getOrder(username);
+            List<OrderDto> order = memberService.getOrder(username);
 
             return ResponseEntity.ok().body(Map.of("cart", cart, "order", order));
         } catch (Exception e) {
@@ -97,6 +96,7 @@ public class MemberApiController {
                     .body("{\"error\": \"회원 정보 조회에 실패하였습니다. 다시 시도해 주세요.\"}");
         }
     }
+
 
     @PatchMapping("/mypage")
     public ResponseEntity<?> updateMember(HttpServletRequest request,
@@ -106,6 +106,7 @@ public class MemberApiController {
             MemberResponseDto memberResponseDto = memberService.updateMember(username, memberRequestDto);
             return ResponseEntity.ok().body(memberResponseDto);
         } catch (Exception e) {
+            log.info("Error updating member", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"error\": \"회원 정보 수정에 실패하였습니다. 다시 시도해 주세요.\"}");
         }

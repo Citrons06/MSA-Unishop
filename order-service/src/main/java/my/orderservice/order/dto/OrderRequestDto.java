@@ -1,9 +1,11 @@
 package my.orderservice.order.dto;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter @Setter
+@NoArgsConstructor
 public class OrderRequestDto {
 
     private Long itemId;
@@ -12,7 +14,7 @@ public class OrderRequestDto {
     private String street;
     private String zipcode;
     private String orderTel;
-    private String order_username;
+    private String orderUsername;
     private int quantity;
     private int orderPrice;
 

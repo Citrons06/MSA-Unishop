@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 @Getter @Setter
 public class ItemResponseDto {
 
-    private Long id;
+    private Long itemId;
     private String itemName;
     private int price;
     private int quantity;
@@ -21,7 +21,7 @@ public class ItemResponseDto {
     private List<ItemImgResponseDto> itemImgList = new ArrayList<>();
 
     public ItemResponseDto(Item item) {
-        this.id = item.getId();
+        this.itemId = item.getId();
         this.itemName = item.getItemName();
         this.price = item.getPrice();
         this.quantity = (item.getQuantity() != null) ? item.getQuantity() : 0;

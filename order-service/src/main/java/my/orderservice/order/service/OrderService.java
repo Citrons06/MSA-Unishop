@@ -33,15 +33,16 @@ public class OrderService {
     private final ProductAdapter productAdapter;
     private final UserAdapter userAdapter;
 
-    private static final int CANCELATION_PERIOD_DAYS = 1;
-    private static final int DELIVERY_PERIOD_DAYS = 1;
-    private static final int DELIVERY_COMPLETION_PERIOD_DAYS = 2;
-    private static final int RETURN_REQUEST_PERIOD_DAYS = 3;
+    private static final int CANCELATION_PERIOD_DAYS = 1;  // 주문 완료 후 1일 이내 취소 가능
+    private static final int DELIVERY_PERIOD_DAYS = 1;  // 주문 완료 후 1일 이내 배송
+    private static final int DELIVERY_COMPLETION_PERIOD_DAYS = 2;  // 주문 완료 후 2일 이내 배송 완료
+    private static final int RETURN_REQUEST_PERIOD_DAYS = 3;  // 반품 신청 기간 3일
 
     public OrderResponseDto order(String username, OrderRequestDto orderRequestDto) {
         // 회원, 상품 정보 가져오기
         UserDto member = userAdapter.getUserByUsername(username);
         ProductDto product = productAdapter.getItem(orderRequestDto.getItemId());
+        log.info("ProductDto retrieved: {}, {}", product.getItemId(), product.getItemName());
 
         validateProductAvailability(product, orderRequestDto.getQuantity());
 
@@ -55,7 +56,10 @@ public class OrderService {
                 .build();
 
         // 주문 항목 생성 및 추가
-        OrderItem orderItem = new OrderItem(order, product.getId(), product.getItemName(), orderRequestDto.getQuantity(), product.getPrice());
+        log.info("Creating OrderItem with itemId: {}, itemName: {}, quantity: {}, price: {}",
+                product.getItemId(), product.getItemName(), orderRequestDto.getQuantity(), product.getPrice());
+
+        OrderItem orderItem = new OrderItem(order, product.getItemId(), product.getItemName(), orderRequestDto.getQuantity(), product.getPrice());
         order.getOrderItems().add(orderItem);
 
         // 총 금액 설정
@@ -68,7 +72,6 @@ public class OrderService {
 
         log.info("주문이 완료되었습니다.: {}", order);
 
-        // OrderResponseDto 생성
         return new OrderResponseDto(order);
     }
 
@@ -85,7 +88,7 @@ public class OrderService {
 
         orderRepository.save(order);
 
-        log.info("해당 주문이 취소되었습니다.: {}", order);
+        log.info("해당 주문이 취소되었습니다.: {}", order.getId());
     }
 
     public void returnOrder(Long orderId) {
@@ -95,7 +98,7 @@ public class OrderService {
         order.returnOrder();
         orderRepository.save(order);
 
-        log.info("해당 주문이 반품 신청되었습니다.: {}", order);
+        log.info("해당 주문이 반품 신청되었습니다.: {}", order.getId());
     }
 
     @Scheduled(fixedRate = 60 * 1000) // 1분마다 실행
@@ -106,7 +109,7 @@ public class OrderService {
             adjustStockQuantity(order.getOrderItems(), 1);
             orderRepository.save(order);
 
-            log.info("반품된 상품의 재고가 회복됩니다.: {}", order);
+            log.info("반품된 상품의 재고가 회복됩니다.: {}", order.getOrderItems().stream().map(OrderItem::getItemId).collect(Collectors.toList()));
         });
     }
 
@@ -118,7 +121,7 @@ public class OrderService {
             updateStatusBasedOnDate(order);
             orderRepository.save(order);
 
-            log.info("해당 주문의 상태가 변경됩니다.: {}", order);
+            log.info("해당 주문의 상태가 변경되었습니다.: {}", order.getId());
         });
     }
 
@@ -166,6 +169,7 @@ public class OrderService {
 
     private void adjustStockQuantity(List<OrderItem> orderItems, int multiplier) {
         for (OrderItem orderItem : orderItems) {
+            log.info("재고 조정: {}, {}", orderItem.getItemId(), multiplier * orderItem.getCount());
             productAdapter.updateQuantity(orderItem.getItemId(), multiplier * orderItem.getCount());
         }
     }
