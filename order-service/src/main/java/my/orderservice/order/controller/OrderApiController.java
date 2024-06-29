@@ -31,7 +31,7 @@ public class OrderApiController {
 
     // 주문 단건 상세 조회
     @GetMapping("/{orderId}")
-    public ResponseEntity<?> orderDetail(@PathVariable Long orderId) {
+    public ResponseEntity<?> orderDetail(@PathVariable("orderId") Long orderId) {
         OrderResponseDto order = orderService.getOrderById(orderId);
         return ResponseEntity.ok(order);
     }

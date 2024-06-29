@@ -61,6 +61,7 @@ public class MemberApiController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDto loginRequest, HttpServletResponse response) {
         try {
+            log.info("Received login request: {}", loginRequest);
             LoginResponseDto loginResponseDto = authService.login(loginRequest, response);
             return ResponseEntity.ok(loginResponseDto);
         } catch (Exception e) {

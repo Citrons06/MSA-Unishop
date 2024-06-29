@@ -5,44 +5,35 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
 public class ApiGatewayFilter extends AbstractGatewayFilterFactory<ApiGatewayFilter.Config> {
 
-    private final JwtUtil jwtUtil;
 
     public static class Config {
     }
 
     public ApiGatewayFilter(JwtUtil jwtUtil) {
         super(Config.class);
-        this.jwtUtil = jwtUtil;
     }
 
     @Override
     public GatewayFilter apply(Config config) {
+        // Custom Pre Filter
         return (exchange, chain) -> {
-            String token = exchange.getRequest().getHeaders().getFirst("Authorization");
+            ServerHttpRequest request = exchange.getRequest();
+            ServerHttpResponse response = exchange.getResponse();
 
-            if (token != null && jwtUtil.validateToken(token)) {
-                String role = jwtUtil.getRoleFromToken(token);
-                String username = jwtUtil.getUsernameFromToken(token);
+            log.info("Custom PRE filter : request id -> {}", request.getId());
 
-                ServerHttpRequest request = exchange.getRequest().mutate()
-                        .header("X-User-Role", role)
-                        .header("X-User-Name", username)
-                        .build();
-
-                log.info("role: {}", role);
-                log.info("username: {}", username);
-
-                return chain.filter(exchange.mutate().request(request).build());
-            }
-
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            // Custom Post Filter
+            return chain.filter(exchange).then(Mono.fromRunnable(() -> {    // Mono : 비동기 방식의 서버에서 단일값을 전달할 때 사용
+                log.info("Custom POST filter : response code -> {}", response.getStatusCode());
+            }));
         };
     }
 }

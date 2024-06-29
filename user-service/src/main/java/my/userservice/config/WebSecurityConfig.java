@@ -17,9 +17,10 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, UrlBasedCorsConfigurationSource corsConfigurationSource) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                       // .requestMatchers("/api/user/mypage", "/user/mypage", "/api/cart/**", "/cart").authenticated()
+                        .requestMatchers("/api/user/login").permitAll()
                         .anyRequest().permitAll());
         return http.build();
     }

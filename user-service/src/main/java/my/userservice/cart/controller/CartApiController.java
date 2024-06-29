@@ -41,7 +41,7 @@ public class CartApiController {
 
     // 장바구니에서 특정 상품 삭제
     @DeleteMapping("/remove/{itemId}")
-    public ResponseEntity<CartResponseDto> removeItemFromCart(HttpServletRequest request, @PathVariable Long itemId) {
+    public ResponseEntity<CartResponseDto> removeItemFromCart(HttpServletRequest request, @PathVariable("itemId") Long itemId) {
         String username = request.getHeader("X-User-Name");
         CartResponseDto cart = cartService.removeItem(username, itemId);
         return ResponseEntity.ok(cart);
@@ -58,7 +58,7 @@ public class CartApiController {
     // 장바구니에 담긴 상품의 수량 업데이트
     @PutMapping("/update/{itemId}")
     public ResponseEntity<CartResponseDto> updateItemQuantity(HttpServletRequest request,
-                                                   @PathVariable Long itemId,
+                                                   @PathVariable("itemId") Long itemId,
                                                    @RequestBody UpdateCartItemRequest updateCartItemRequest) {
         String username = request.getHeader("X-User-Name");
         CartResponseDto cart = cartService.updateCartItem(username, updateCartItemRequest);
