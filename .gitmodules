@@ -1,6 +1,0 @@
-[submodule "api-gateway"]
-	path = api-gateway
-	url = C:\\Project\\MSA\\E-Commerce-MSA\\api-gateway
-[submodule "eureka"]
-	path = eureka
-	url = C:\\Project\\MSA\\E-Commerce-MSA\\eureka
