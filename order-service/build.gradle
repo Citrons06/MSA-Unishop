@@ -18,45 +18,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
-    implementation 'org.springframework.session:spring-session-data-redis'
-
-    implementation 'org.springframework.boot:spring-boot-starter-kafka'
-
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.5'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
-
-    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    compileOnly group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.11.5'
-    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.5'
-    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.5'
-    runtimeOnly 'org.postgresql:postgresql'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation('it.ozimov:embedded-redis:0.7.3') {
-        exclude group: 'org.slf4j', module: 'slf4j-simple'
-    }
+    implementation project(':user-service') // 코어 모듈 의존성 추가
 }
 
 tasks.named('test') {
     useJUnitPlatform()
-}
-
-dependencyManagement {
-    imports {
-        mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2023.0.1'
-    }
 }
