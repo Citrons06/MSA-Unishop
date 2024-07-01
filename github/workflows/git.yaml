@@ -1,0 +1,29 @@
+name: Run
+
+on:
+  push:
+    branches: [ main, user-service, product-service, order-service, api-gateway ]
+
+  pull_request:
+    branches: [ main, user-service, product-service, order-service, api-gateway ]
+
+  jobs:
+    build:
+
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: checkout
+          uses: actions/checkout@v4
+
+        - name: java setup
+          uses: actions/setup-java@v2
+          with:
+            distribution: 'adopt'
+            java-version: '21'
+
+        - name: make executable gradlew
+          run: chmod +x gradlew
+
+        - name: run unittest
+          run: ./gradlew test

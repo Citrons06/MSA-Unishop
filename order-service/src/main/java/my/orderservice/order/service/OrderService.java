@@ -1,5 +1,6 @@
 package my.orderservice.order.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.orderservice.adapter.ProductAdapter;
@@ -41,6 +42,7 @@ public class OrderService {
     private static final int DELIVERY_COMPLETION_PERIOD_DAYS = 2;  // 주문 완료 후 2일 이내 배송 완료
     private static final int RETURN_REQUEST_PERIOD_DAYS = 3;  // 반품 신청 기간 3일
 
+    @CircuitBreaker(name = "orderServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     public OrderRequestDto order(String username, OrderRequestDto orderRequestDto) {
         // 회원, 상품 정보 가져오기
         UserDto member = userAdapter.getUserByUsername(username);

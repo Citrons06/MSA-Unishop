@@ -6,12 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.userservice.adapter.OrderDto;
 import my.userservice.cart.dto.CartItemResponseDto;
-import my.userservice.cart.entity.Cart;
 import my.userservice.cart.service.CartService;
-import my.userservice.member.dto.LoginRequestDto;
-import my.userservice.member.dto.LoginResponseDto;
-import my.userservice.member.dto.MemberRequestDto;
-import my.userservice.member.dto.MemberResponseDto;
+import my.userservice.member.dto.*;
 import my.userservice.member.service.AuthService;
 import my.userservice.member.service.MemberServiceImpl;
 import org.springframework.http.HttpHeaders;
@@ -115,6 +111,12 @@ public class MemberApiController {
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(@RequestParam String refreshToken) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Refresh token 기능이 지원되지 않습니다.");
+        try {
+            AuthResponse authResponse = authService.refreshAccessToken(refreshToken);
+            return ResponseEntity.ok().body(Map.of("accessToken", authResponse.getAccessToken()));
+        } catch (Exception e) {
+            log.error("Error refreshing access token", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
+        }
     }
 }
