@@ -19,7 +19,7 @@ public class OrderConsumer {
         log.info("Consumed event: {}", orderEvent);
 
         try {
-            if ("ORDER_CREATED".equals(orderEvent.getStatus())) {
+            if ("STOCK_UPDATED".equals(orderEvent.getStatus())) {
                 itemWriteService.updateQuantityAndSellCount(orderEvent.getItemId(), orderEvent.getQuantity());
             }
         } catch (Exception e) {

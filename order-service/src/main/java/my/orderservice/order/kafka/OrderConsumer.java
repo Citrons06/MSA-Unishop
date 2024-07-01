@@ -30,10 +30,10 @@ public class OrderConsumer {
 
                 // 재고 업데이트 이벤트 발행
                 OrderEvent stockEvent = new OrderEvent(
-                        orderEvent.getItemId(), orderEvent.getMemberId(),
-                        orderEvent.getQuantity(), "STOCK_UPDATED",
-                        orderEvent.getUsername(), orderEvent.getOrderRequestDto(),
-                        orderEvent.getItemName());
+                        "STOCK_UPDATED", orderEvent.getMemberId(), orderEvent.getItemId(), orderEvent.getItemName(),
+                        orderEvent.getCity(), orderEvent.getStreet(), orderEvent.getZipcode(),
+                        orderEvent.getOrderTel(), orderEvent.getOrderUsername(), orderEvent.getQuantity(), orderEvent.getOrderPrice()
+                );
                 orderProducer.sendOrderEvent(stockEvent);
             }
         } catch (Exception e) {
@@ -43,23 +43,20 @@ public class OrderConsumer {
 
     @Transactional
     public void createOrder(OrderEvent orderEvent) {
-        OrderRequestDto orderRequestDto = orderEvent.getOrderRequestDto();
 
         // 주문 생성
         Order order = Order.builder()
                 .memberId(orderEvent.getMemberId())
-                .orderUsername(orderRequestDto.getOrderUsername())
-                .orderAddress(orderRequestDto.getCity() + " " + orderRequestDto.getStreet() + " " + orderRequestDto.getZipcode())
-                .orderTel(orderRequestDto.getOrderTel())
+                .orderUsername(orderEvent.getOrderUsername())
+                .orderAddress(orderEvent.getCity() + " " + orderEvent.getStreet() + " " + orderEvent.getZipcode())
+                .orderTel(orderEvent.getOrderTel())
                 .orderStatus(OrderStatus.ORDERED)
+                .orderPrice(orderEvent.getOrderPrice())
                 .build();
 
         // 주문 항목 생성 및 추가
-        OrderItem orderItem = new OrderItem(order, orderEvent.getItemId(), orderEvent.getItemName(), orderRequestDto.getQuantity(), 0);
+        OrderItem orderItem = new OrderItem(order, orderEvent.getItemId(), orderEvent.getItemName(), orderEvent.getQuantity(), orderEvent.getOrderPrice());
         order.getOrderItems().add(orderItem);
-
-        // 총 금액 설정
-        order.setOrderPrice(order.getTotalPrice());
 
         orderRepository.save(order);
 

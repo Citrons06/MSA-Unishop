@@ -3,17 +3,20 @@ package my.orderservice.order.kafka.event;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import my.orderservice.order.dto.OrderRequestDto;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderEvent {
-    private Long itemId;
-    private Long memberId;
-    private int quantity;
     private String status;
-    private String username;
-    private OrderRequestDto orderRequestDto;
+    private Long memberId;
+    private Long itemId;
     private String itemName;
+    private String city;
+    private String street;
+    private String zipcode;
+    private String orderTel;
+    private String orderUsername;
+    private int quantity;
+    private int orderPrice;
 }

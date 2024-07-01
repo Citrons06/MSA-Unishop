@@ -51,7 +51,12 @@ public class OrderService {
             validateProductAvailability(product, orderRequestDto.getQuantity());
 
             // 주문 이벤트 발행
-            OrderEvent orderEvent = new OrderEvent(product.getItemId(), member.getId(), orderRequestDto.getQuantity(), "ORDER_CREATED", username, orderRequestDto, product.getItemName());
+            OrderEvent orderEvent = new OrderEvent(
+                    "ORDER_CREATED", member.getId(), product.getItemId(), product.getItemName(), orderRequestDto.getCity(),
+                    orderRequestDto.getStreet(), orderRequestDto.getZipcode(),
+                    orderRequestDto.getOrderTel(), orderRequestDto.getOrderUsername(),
+                    orderRequestDto.getQuantity(), orderRequestDto.getOrderPrice()
+            );
             orderProducer.sendOrderEvent(orderEvent);
 
             return orderRequestDto;

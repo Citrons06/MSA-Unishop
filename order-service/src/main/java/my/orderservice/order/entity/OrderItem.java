@@ -41,7 +41,6 @@ public class OrderItem extends BaseEntity {
         log.info("OrderItem created with itemId: {}, itemName: {}, quantity: {}, price: {}", this.itemId, this.itemName, this.count, this.orderPrice);
     }
 
-
     public int getTotalPrice() {
         return orderPrice * count;
     }

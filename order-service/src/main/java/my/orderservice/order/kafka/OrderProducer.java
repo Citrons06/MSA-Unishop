@@ -17,7 +17,7 @@ public class OrderProducer {
 
     public void sendOrderEvent(OrderEvent orderEvent) {
         try {
-            // OrderEvent 객체를 JSON으로 직렬화하여 Kafka 토픽에 전송
+            // OrderEvent 객체를 직렬화하여 Kafka 토픽에 전송
             kafkaTemplate.send(TOPIC, orderEvent);
             log.info("Sent event: {}", orderEvent);
         } catch (Exception e) {
