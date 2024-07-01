@@ -15,11 +15,9 @@ public class ApiGatewayFilter extends AbstractGatewayFilterFactory<ApiGatewayFil
 
     private final JwtUtil jwtUtil;
 
-    // Config 클래스 정의
     public static class Config {
     }
 
-    // ApiGatewayFilter 생성자
     public ApiGatewayFilter(JwtUtil jwtUtil) {
         super(Config.class);
         this.jwtUtil = jwtUtil;

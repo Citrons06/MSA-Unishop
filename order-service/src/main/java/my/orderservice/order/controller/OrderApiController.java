@@ -36,19 +36,22 @@ public class OrderApiController {
         return ResponseEntity.ok(order);
     }
 
+    // 주문 생성
     @PostMapping
-    public ResponseEntity<OrderResponseDto> createOrder(HttpServletRequest request, @RequestBody OrderRequestDto orderRequestDto) {
+    public ResponseEntity<?> createOrder(HttpServletRequest request, @RequestBody OrderRequestDto orderRequestDto) {
         String username = request.getHeader("X-User-Name");
-        OrderResponseDto order = orderService.order(username, orderRequestDto);
+        OrderRequestDto order = orderService.order(username, orderRequestDto);
         return ResponseEntity.ok(order);
     }
 
+    // 주문 취소
     @PostMapping("/cancel/{orderId}")
     public ResponseEntity<String> cancelOrder(@PathVariable("orderId") Long orderId) {
         orderService.cancelOrder(orderId);
         return ResponseEntity.ok("주문이 취소되었습니다.");
     }
 
+    // 반품 신청
     @PostMapping("/return/{orderId}")
     public ResponseEntity<String> returnOrder(@PathVariable("orderId") Long orderId) {
         orderService.returnOrder(orderId);

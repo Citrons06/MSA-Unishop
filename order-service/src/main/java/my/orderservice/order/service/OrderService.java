@@ -11,6 +11,8 @@ import my.orderservice.order.dto.OrderResponseDto;
 import my.orderservice.order.entity.Order;
 import my.orderservice.order.entity.OrderItem;
 import my.orderservice.order.entity.OrderStatus;
+import my.orderservice.order.kafka.OrderProducer;
+import my.orderservice.order.kafka.event.OrderEvent;
 import my.orderservice.order.repository.OrderRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,47 +34,31 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductAdapter productAdapter;
     private final UserAdapter userAdapter;
+    private final OrderProducer orderProducer;
 
     private static final int CANCELATION_PERIOD_DAYS = 1;  // 주문 완료 후 1일 이내 취소 가능
     private static final int DELIVERY_PERIOD_DAYS = 1;  // 주문 완료 후 1일 이내 배송
     private static final int DELIVERY_COMPLETION_PERIOD_DAYS = 2;  // 주문 완료 후 2일 이내 배송 완료
     private static final int RETURN_REQUEST_PERIOD_DAYS = 3;  // 반품 신청 기간 3일
 
-    public OrderResponseDto order(String username, OrderRequestDto orderRequestDto) {
+    public OrderRequestDto order(String username, OrderRequestDto orderRequestDto) {
         // 회원, 상품 정보 가져오기
         UserDto member = userAdapter.getUserByUsername(username);
         ProductDto product = productAdapter.getItem(orderRequestDto.getItemId());
         log.info("ProductDto retrieved: {}, {}", product.getItemId(), product.getItemName());
 
-        validateProductAvailability(product, orderRequestDto.getQuantity());
+        try {
+            validateProductAvailability(product, orderRequestDto.getQuantity());
 
-        // 주문 생성
-        Order order = Order.builder()
-                .memberId(member.getId())
-                .orderUsername(username)
-                .orderAddress(orderRequestDto.getCity() + " " + orderRequestDto.getStreet() + " " + orderRequestDto.getZipcode())
-                .orderTel(orderRequestDto.getOrderTel())
-                .orderStatus(OrderStatus.ORDERED)
-                .build();
+            // 주문 이벤트 발행
+            OrderEvent orderEvent = new OrderEvent(product.getItemId(), member.getId(), orderRequestDto.getQuantity(), "ORDER_CREATED", username, orderRequestDto, product.getItemName());
+            orderProducer.sendOrderEvent(orderEvent);
 
-        // 주문 항목 생성 및 추가
-        log.info("Creating OrderItem with itemId: {}, itemName: {}, quantity: {}, price: {}",
-                product.getItemId(), product.getItemName(), orderRequestDto.getQuantity(), product.getPrice());
-
-        OrderItem orderItem = new OrderItem(order, product.getItemId(), product.getItemName(), orderRequestDto.getQuantity(), product.getPrice());
-        order.getOrderItems().add(orderItem);
-
-        // 총 금액 설정
-        order.setOrderPrice(order.getTotalPrice());
-
-        // 재고 감소
-        adjustStockQuantity(order.getOrderItems(), -1);
-
-        orderRepository.save(order);
-
-        log.info("주문이 완료되었습니다.: {}", order);
-
-        return new OrderResponseDto(order);
+            return orderRequestDto;
+        } catch (Exception e) {
+            log.error("Error during order creation", e);
+            throw new IllegalStateException("Order creation failed");
+        }
     }
 
     public void cancelOrder(Long orderId) {

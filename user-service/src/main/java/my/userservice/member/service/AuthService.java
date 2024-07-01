@@ -8,14 +8,20 @@ import lombok.extern.slf4j.Slf4j;
 import my.userservice.member.dto.AuthResponse;
 import my.userservice.member.dto.LoginRequestDto;
 import my.userservice.member.dto.LoginResponseDto;
+import my.userservice.member.entity.BlackList;
 import my.userservice.member.entity.Member;
 import my.userservice.member.repository.MemberRepository;
 import my.userservice.refresh.RefreshToken;
 import my.userservice.refresh.RefreshTokenRepository;
 import my.userservice.util.JwtUtil;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -27,6 +33,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final @Qualifier("redisTemplate") RedisTemplate<String, Object> redisTemplate;
 
     public LoginResponseDto login(LoginRequestDto loginRequestDto, HttpServletResponse response) {
         log.info("로그인 시도");
@@ -40,8 +47,14 @@ public class AuthService {
                 throw new IllegalArgumentException("회원 정보가 일치하지 않습니다.");
             }
 
+            String role = member.getRole().name();
+            String ext_refreshToken = jwtUtil.generateRefreshToken(username, role);
 
-            String role = member.getRole().name(); // 역할 가져오기
+            // 블랙리스트에 리프레시 토큰이 있는지 확인
+            if (isTokenBlacklisted(ext_refreshToken)) {
+                throw new IllegalArgumentException("블랙리스트에 등록된 리프레시 토큰입니다.");
+            }
+
             String accessToken = jwtUtil.generateAccessToken(username, role);
             String refreshToken = jwtUtil.generateRefreshToken(username, role);
 
@@ -74,6 +87,9 @@ public class AuthService {
     public void logout(String refreshToken) {
         if (jwtUtil.validateToken(refreshToken)) {
             refreshTokenRepository.deleteByToken(refreshToken);
+            // 만료 시간을 7일로 설정
+            BlackList blackList = new BlackList(refreshToken, LocalDateTime.now());
+            redisTemplate.opsForValue().set("refreshtoken:" + refreshToken, blackList, 7, TimeUnit.DAYS);
         } else {
             throw new IllegalArgumentException("Invalid refresh token");
         }
@@ -93,5 +109,10 @@ public class AuthService {
 
         String accessToken = jwtUtil.generateAccessToken(username, claims.get("role", String.class));
         return new AuthResponse(accessToken);
+    }
+
+    private boolean isTokenBlacklisted(String refreshToken) {
+        Object blackList = redisTemplate.opsForValue().get("refreshtoken:" + refreshToken);
+        return blackList != null;
     }
 }

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.admin.service.CategoryAdminService;
 import my.productservice.item.dto.CategoryResponseDto;
-import my.productservice.item.service.ItemServiceImpl;
+import my.productservice.item.service.ItemReadService;
 import my.productservice.item.dto.ItemResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItemController {
 
-    private final ItemServiceImpl itemService;
+    private final ItemReadService itemService;
     private final CategoryAdminService categoryAdminService;
 
     @GetMapping("/item/list")

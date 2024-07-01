@@ -1,16 +1,17 @@
-package my.userservice.blacklist;
+package my.userservice.member.entity;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import my.userservice.common.entity.BaseRedisEntity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.index.Indexed;
 
+import java.time.LocalDateTime;
+
 @Getter
 @NoArgsConstructor
 @RedisHash("blacklist")
-public class BlackList extends BaseRedisEntity {
+public class BlackList {
 
     @Id
     private Long id;
@@ -18,8 +19,10 @@ public class BlackList extends BaseRedisEntity {
     @Indexed
     private String refreshToken;
 
-    public BlackList(String refreshToken) {
+    private LocalDateTime createdDate;
+
+    public BlackList(String refreshToken, LocalDateTime createdDate) {
         this.refreshToken = refreshToken;
-        prePersist();
+        this.createdDate = createdDate;
     }
 }

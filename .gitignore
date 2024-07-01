@@ -44,3 +44,5 @@ gradlew.bat
 settings.gradle
 gradle
 .gitmodules
+docker-compose.yml
+kafka-data

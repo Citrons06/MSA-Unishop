@@ -89,6 +89,7 @@ public class CartService {
 
         redisUtils.put(username, cart);
         redisUtils.setExpire(username, CART_TTL, TimeUnit.DAYS); // TTL 설정
+
         return new CartResponseDto(cart);
     }
 
@@ -100,6 +101,7 @@ public class CartService {
             cart.getItems().removeIf(item -> item.getItemId().equals(itemId));
             redisUtils.put(username, cart);
             redisUtils.setExpire(username, CART_TTL, TimeUnit.DAYS); // TTL 설정
+
         }
 
         return new CartResponseDto(cart);
@@ -108,6 +110,7 @@ public class CartService {
     // 장바구니 초기화
     public void clearCart(String username) {
         redisUtils.deleteData(username);
+
     }
 
     // 장바구니 상품 수량 업데이트
@@ -124,6 +127,7 @@ public class CartService {
                 existingItem.setCount(updateCartItemRequest.getQuantity());
                 redisUtils.put(username, cart);
                 redisUtils.setExpire(username, CART_TTL, TimeUnit.DAYS); // TTL 설정
+
             }
         }
 
