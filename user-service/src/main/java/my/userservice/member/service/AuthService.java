@@ -52,7 +52,7 @@ public class AuthService {
 
             // 블랙리스트에 리프레시 토큰이 있는지 확인
             if (isTokenBlacklisted(ext_refreshToken)) {
-                throw new IllegalArgumentException("블랙리스트에 등록된 리프레시 토큰입니다.");
+                throw new IllegalArgumentException("블랙리스트에 등록된 토큰입니다.");
             }
 
             String accessToken = jwtUtil.generateAccessToken(username, role);

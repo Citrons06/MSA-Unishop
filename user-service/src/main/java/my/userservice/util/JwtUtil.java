@@ -1,9 +1,6 @@
 package my.userservice.util;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -83,5 +80,14 @@ public class JwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + 5 * 60 * 1000)) // 5분
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            Claims claims = getClaimsFromToken(token);
+            return claims.getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
     }
 }

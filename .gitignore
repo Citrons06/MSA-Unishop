@@ -46,3 +46,4 @@ gradle
 .gitmodules
 docker-compose.yml
 kafka-data
+redis-data
