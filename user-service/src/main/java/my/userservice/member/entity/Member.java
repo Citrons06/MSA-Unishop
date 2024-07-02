@@ -3,6 +3,7 @@ package my.userservice.member.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import my.userservice.common.entity.BaseEntity;
 import my.userservice.member.dto.MemberRequestDto;
 
@@ -34,6 +35,11 @@ public class Member extends BaseEntity {
         this.memberEmail = requestDto.getMemberEmail();
         this.memberAddress = new Address(requestDto.getCity(), requestDto.getStreet(), requestDto.getZipcode());
         this.role = requestDto.getRole();
+    }
+
+    public Member(String username, String password) {
+        this.username = username;
+        this.password = password;
     }
 
     public void updateMember(MemberRequestDto memberRequestDto) {

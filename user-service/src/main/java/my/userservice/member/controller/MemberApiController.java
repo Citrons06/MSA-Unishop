@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import my.userservice.adapter.OrderDto;
 import my.userservice.cart.dto.CartItemResponseDto;
 import my.userservice.cart.service.CartService;
+import my.userservice.exception.CommonException;
+import my.userservice.exception.ErrorCode;
 import my.userservice.member.dto.*;
 import my.userservice.member.service.AuthService;
 import my.userservice.member.service.MemberServiceImpl;
@@ -45,12 +47,11 @@ public class MemberApiController {
                 headers.add("Location", "/user/join-complete");
                 return new ResponseEntity<>(headers, HttpStatus.FOUND);
             } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"error\": \"만료된 토큰입니다.\"}");
+                throw new CommonException(ErrorCode.NOT_AUTHORIZED);
             }
         } catch (Exception e) {
             log.error("Error verifying email", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("{\"error\": \"이메일 인증 중 오류가 발생하였습니다. 다시 시도해 주세요.\"}");
+            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -62,7 +63,7 @@ public class MemberApiController {
             return ResponseEntity.ok(loginResponseDto);
         } catch (Exception e) {
             log.error("Authentication failed", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed");
+            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
         }
     }
 
@@ -76,7 +77,7 @@ public class MemberApiController {
             return ResponseEntity.ok("로그아웃 되었습니다.");
         } catch (IllegalArgumentException e) {
             log.error("Invalid refresh token", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
         }
     }
 
@@ -89,11 +90,9 @@ public class MemberApiController {
 
             return ResponseEntity.ok().body(Map.of("cart", cart, "order", order));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("{\"error\": \"회원 정보 조회에 실패하였습니다. 다시 시도해 주세요.\"}");
+            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
-
 
     @PatchMapping("/mypage")
     public ResponseEntity<?> updateMember(HttpServletRequest request,
@@ -104,19 +103,22 @@ public class MemberApiController {
             return ResponseEntity.ok().body(memberResponseDto);
         } catch (Exception e) {
             log.info("Error updating member", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("{\"error\": \"회원 정보 수정에 실패하였습니다. 다시 시도해 주세요.\"}");
+            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshAccessToken(@RequestParam String refreshToken) {
+    public ResponseEntity<?> refreshAccessToken(@RequestParam("refreshToken") String refreshToken) {
         try {
             AuthResponse authResponse = authService.refreshAccessToken(refreshToken);
+            if (authResponse == null || authResponse.getAccessToken() == null) {
+                throw new CommonException(ErrorCode.NOT_AUTHORIZED);
+            }
             return ResponseEntity.ok().body(Map.of("accessToken", authResponse.getAccessToken()));
         } catch (Exception e) {
             log.error("Error refreshing access token", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
+            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
         }
     }
+
 }

@@ -13,4 +13,11 @@ public class CartItem {
     private String itemName;
     private String itemDescription;
     private int price;
+
+    public CartItem(Long itemId, String itemName, int count, int quantity) {
+        this.itemId = itemId;
+        this.itemName = itemName;
+        this.count = count;
+        this.price = quantity;
+    }
 }
