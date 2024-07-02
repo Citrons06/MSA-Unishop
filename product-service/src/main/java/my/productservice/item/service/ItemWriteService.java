@@ -1,5 +1,10 @@
 package my.productservice.item.service;
 
+<<<<<<< HEAD
+=======
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import jakarta.ws.rs.NotFoundException;
+>>>>>>> main
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.exception.CommonException;
@@ -20,6 +25,7 @@ public class ItemWriteService {
     private final ItemRepository itemRepository;
     private final InventoryService inventoryService;
 
+    @CircuitBreaker(name = "ItemServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     public ItemResponseDto updateQuantityAndSellCount(Long itemId, int quantity) {
         Item item = itemRepository.findItemById(itemId);
 
