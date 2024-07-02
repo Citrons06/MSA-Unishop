@@ -3,6 +3,8 @@ package my.productservice.admin.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.admin.repository.CategoryRepository;
+import my.productservice.exception.CommonException;
+import my.productservice.exception.ErrorCode;
 import my.productservice.item.dto.CategoryRequestDto;
 import my.productservice.item.dto.CategoryResponseDto;
 import my.productservice.item.entity.Category;
@@ -32,7 +34,7 @@ public class CategoryAdminService {
     @Transactional(readOnly = true)
     public CategoryResponseDto getCategory(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+                .orElseThrow(() -> new CommonException(ErrorCode.CATEGORY_NOT_FOUND));
         return new CategoryResponseDto(category);
     }
 

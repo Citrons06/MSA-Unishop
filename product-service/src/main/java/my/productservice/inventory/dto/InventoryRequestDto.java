@@ -1,4 +1,4 @@
-package my.orderservice.inventory.dto;
+package my.productservice.inventory.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

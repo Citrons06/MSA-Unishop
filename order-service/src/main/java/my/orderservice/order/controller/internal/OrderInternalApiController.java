@@ -1,6 +1,8 @@
 package my.orderservice.order.controller.internal;
 
 import lombok.RequiredArgsConstructor;
+import my.orderservice.exception.CommonException;
+import my.orderservice.exception.ErrorCode;
 import my.orderservice.order.dto.OrderResponseDto;
 import my.orderservice.order.service.OrderService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,10 @@ public class OrderInternalApiController {
 
     @GetMapping("/api/order/internal/list")
     public List<OrderResponseDto> orderList(@RequestParam("username") String username) {
-        return orderService.getOrderList(username, 10, 10);
+        try {
+            return orderService.getOrderList(username, 10, 10);
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
     }
 }
