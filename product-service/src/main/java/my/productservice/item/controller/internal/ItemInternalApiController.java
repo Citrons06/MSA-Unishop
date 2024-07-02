@@ -3,11 +3,13 @@ package my.productservice.item.controller.internal;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.productservice.exception.CommonException;
+import my.productservice.exception.ErrorCode;
+import my.productservice.inventory.service.InventoryService;
 import my.productservice.item.dto.ItemInternalResponse;
 import my.productservice.item.dto.ItemResponseDto;
 import my.productservice.item.service.ItemReadService;
 import my.productservice.item.service.ItemWriteService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,18 +20,20 @@ public class ItemInternalApiController {
 
     private final ItemReadService itemReadService;
     private final ItemWriteService itemWriteService;
+    private final InventoryService inventoryService;
 
     @GetMapping("/api/product/internal")
     public ResponseEntity<?> getItem(@RequestParam("itemId") Long itemId) {
         try {
             ItemResponseDto item = itemReadService.getItem(itemId);
-            return ResponseEntity.ok(new ItemInternalResponse(item));
+            int quantity = inventoryService.getStock(itemId);
+            return ResponseEntity.ok(new ItemInternalResponse(new ItemResponseDto(item, quantity)));
         } catch (NotFoundException e) {
             log.error("Item not found with ID: {}", itemId, e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Item not found");
+            throw new CommonException(ErrorCode.PRODUCT_NOT_FOUND);
         } catch (Exception e) {
             log.error("Error fetching item with ID: {}", itemId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching item");
+            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -40,10 +44,10 @@ public class ItemInternalApiController {
             return ResponseEntity.ok(new ItemInternalResponse(item));
         } catch (IllegalArgumentException e) {
             log.error("Error updating quantity for item with ID: {}", itemId, e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            throw new CommonException(ErrorCode.UPDATE_FAILED);
         } catch (Exception e) {
             log.error("Error updating quantity for item with ID: {}", itemId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating quantity");
+            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

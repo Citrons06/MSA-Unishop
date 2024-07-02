@@ -4,10 +4,13 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.userservice.exception.CommonException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import static my.userservice.exception.ErrorCode.SEND_FAILED;
 
 @Slf4j
 @Service
@@ -34,7 +37,7 @@ public class EmailService {
             log.info("Email sent to {}", to);
         } catch (MessagingException e) {
             log.error("Failed to send email", e);
-            throw new RuntimeException(e);
+            throw new CommonException(SEND_FAILED);
         }
     }
 }

@@ -1,9 +1,9 @@
-package my.orderservice.inventory.entity;
+package my.productservice.inventory.entity;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import my.orderservice.inventory.dto.InventoryRequestDto;
+import my.productservice.inventory.dto.InventoryRequestDto;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 

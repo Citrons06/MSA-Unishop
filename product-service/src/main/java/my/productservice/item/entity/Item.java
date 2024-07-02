@@ -23,8 +23,6 @@ public class Item extends BaseEntity {
 
     private Integer price;
 
-    private Integer quantity;
-
     private Integer itemSellCount = 0;
 
     @Enumerated(EnumType.STRING)
@@ -40,7 +38,6 @@ public class Item extends BaseEntity {
     public Item(ItemRequestDto itemRequestDto, Category category) {
         this.itemName = itemRequestDto.getItemName();
         this.price = itemRequestDto.getPrice();
-        this.quantity = itemRequestDto.getQuantity();
         this.itemSellStatus = itemRequestDto.getItemSellStatus();
         this.category = category;
         this.itemSellCount = 0;
@@ -49,7 +46,6 @@ public class Item extends BaseEntity {
     public void updateItem(ItemRequestDto itemRequestDto, Category category) {
         this.itemName = itemRequestDto.getItemName();
         this.price = itemRequestDto.getPrice();
-        this.quantity = itemRequestDto.getQuantity();
         this.itemSellStatus = itemRequestDto.getItemSellStatus();
         this.category = category;
     }
@@ -57,19 +53,6 @@ public class Item extends BaseEntity {
     public void updateItemImgs(List<ItemImg> newItemImgs) {
         this.itemImgList.clear();
         this.itemImgList.addAll(newItemImgs);
-    }
-
-    public void updateStock(int quantity) {
-        if (quantity == 0) {
-            throw new IllegalArgumentException("상품을 1개 이상 선택해 주세요.");
-        }
-        if (this.quantity == null) {
-            this.quantity = 0;
-        }
-        if (this.quantity + quantity < 0) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
-        }
-        this.quantity += quantity;
     }
 
     public void updateItemSellCount(int quantity) {

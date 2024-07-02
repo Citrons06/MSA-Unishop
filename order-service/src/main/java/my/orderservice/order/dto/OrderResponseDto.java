@@ -32,4 +32,12 @@ public class OrderResponseDto {
 
         this.orderPrice = order.getTotalPrice();
     }
+
+    public OrderResponseDto(Long orderId, String itemName, int count, int quantity) {
+        this.orderId = orderId;
+        this.itemName = itemName;
+        this.count = count;
+        this.price = quantity;
+
+    }
 }

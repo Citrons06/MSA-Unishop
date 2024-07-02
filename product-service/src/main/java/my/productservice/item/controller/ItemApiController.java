@@ -26,7 +26,7 @@ public class ItemApiController {
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<?> getItem(@PathVariable Long itemId) {
+    public ResponseEntity<?> getItem(@PathVariable("itemId") Long itemId) {
         ItemResponseDto item = itemReadService.getItem(itemId);
         return ResponseEntity.ok().body(item);
     }

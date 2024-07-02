@@ -20,11 +20,11 @@ public class ItemResponseDto {
 
     private List<ItemImgResponseDto> itemImgList = new ArrayList<>();
 
-    public ItemResponseDto(Item item) {
+    public ItemResponseDto(Item item, int quantity) {
         this.itemId = item.getId();
         this.itemName = item.getItemName();
         this.price = item.getPrice();
-        this.quantity = (item.getQuantity() != null) ? item.getQuantity() : 0;
+        this.quantity = quantity;
         this.itemSellStatus = item.getItemSellStatus().name();
         this.itemImgList = item.getItemImgList().stream()
                 .map(ItemImgResponseDto::new)

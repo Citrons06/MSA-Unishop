@@ -18,9 +18,16 @@ public class CartItemResponseDto {
 
     public CartItemResponseDto(CartItem cartItem, ProductDto product) {
         this.itemId = cartItem.getItemId();
-        this.count = cartItem.getCount();
         this.itemName = product.getItemName();
+        this.count = cartItem.getCount();
         this.price = product.getPrice();
+    }
+
+    public CartItemResponseDto(Long itemId, String itemName, int count, int price) {
+        this.itemId = itemId;
+        this.itemName = itemName;
+        this.count = count;
+        this.price = price;
     }
 
     public int getTotalPrice() {

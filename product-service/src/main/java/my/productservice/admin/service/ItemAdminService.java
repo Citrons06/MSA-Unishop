@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.admin.repository.CategoryRepository;
 import my.productservice.admin.repository.ItemImgRepository;
+import my.productservice.exception.CommonException;
+import my.productservice.exception.ErrorCode;
 import my.productservice.item.dto.ItemRequestDto;
 import my.productservice.item.dto.ItemResponseDto;
 import my.productservice.item.entity.Category;
@@ -37,7 +39,7 @@ public class ItemAdminService {
 
     public ItemResponseDto createItem(ItemRequestDto itemRequestDto) throws IOException {
         Category category = categoryRepository.findById(itemRequestDto.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 카테고리가 없습니다. id=" + itemRequestDto.getCategoryId()));
+                .orElseThrow(() -> new CommonException(ErrorCode.CATEGORY_NOT_FOUND));
 
         Item item = new Item(itemRequestDto, category);
         itemRepository.save(item);
@@ -64,9 +66,9 @@ public class ItemAdminService {
 
     public ItemResponseDto updateItem(Long itemId, ItemRequestDto itemRequestDto, List<MultipartFile> itemImgFileList, Long categoryId) throws IOException {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 상품이 없습니다. id=" + itemId));
+                .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 카테고리가 없습니다. id=" + categoryId));
+                .orElseThrow(() -> new CommonException(ErrorCode.CATEGORY_NOT_FOUND));
         item.updateItem(itemRequestDto, category);
 
         List<ItemImg> itemImgList = new ArrayList<>();
@@ -91,7 +93,7 @@ public class ItemAdminService {
     @Transactional(readOnly = true)
     public ItemResponseDto getItem(Long itemId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 상품이 없습니다. id=" + itemId));
+                .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
         return new ItemResponseDto(item);
     }
 

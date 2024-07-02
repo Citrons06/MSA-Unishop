@@ -1,10 +1,10 @@
-package my.orderservice.inventory.controller;
+package my.productservice.inventory.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.orderservice.inventory.dto.InventoryRequestDto;
-import my.orderservice.inventory.entity.Inventory;
-import my.orderservice.inventory.repository.InventoryRepository;
+import my.productservice.inventory.dto.InventoryRequestDto;
+import my.productservice.inventory.entity.Inventory;
+import my.productservice.inventory.repository.InventoryRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

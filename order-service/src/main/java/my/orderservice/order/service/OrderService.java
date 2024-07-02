@@ -1,12 +1,13 @@
 package my.orderservice.order.service;
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.orderservice.adapter.ProductAdapter;
 import my.orderservice.adapter.ProductDto;
 import my.orderservice.adapter.UserAdapter;
 import my.orderservice.adapter.UserDto;
+import my.orderservice.exception.CommonException;
+import my.orderservice.exception.ErrorCode;
 import my.orderservice.order.dto.OrderRequestDto;
 import my.orderservice.order.dto.OrderResponseDto;
 import my.orderservice.order.entity.Order;
@@ -42,7 +43,6 @@ public class OrderService {
     private static final int DELIVERY_COMPLETION_PERIOD_DAYS = 2;  // 주문 완료 후 2일 이내 배송 완료
     private static final int RETURN_REQUEST_PERIOD_DAYS = 3;  // 반품 신청 기간 3일
 
-    @CircuitBreaker(name = "orderServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     public OrderRequestDto order(String username, OrderRequestDto orderRequestDto) {
         // 회원, 상품 정보 가져오기
         UserDto member = userAdapter.getUserByUsername(username);
@@ -64,7 +64,7 @@ public class OrderService {
             return orderRequestDto;
         } catch (Exception e) {
             log.error("Error during order creation", e);
-            throw new IllegalStateException("Order creation failed");
+            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -106,17 +106,27 @@ public class OrderService {
         });
     }
 
-    @Scheduled(fixedRate = 60 * 1000) // 1분마다 실행
+    @Scheduled(fixedRate = 60 * 30000) // 30분마다 실행
+    @Transactional
     public void updateOrderStatus() {
-        List<Order> orders = orderRepository.findByOrderStatus(OrderStatus.ORDERED);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime deliveryDateThreshold = now.minusDays(DELIVERY_PERIOD_DAYS);
+        LocalDateTime deliveryCompletionDateThreshold = now.minusDays(DELIVERY_COMPLETION_PERIOD_DAYS);
+
+        List<Order> orders = orderRepository.findOrdersForStatusUpdate(OrderStatus.ORDERED, deliveryDateThreshold, deliveryCompletionDateThreshold);
 
         orders.forEach(order -> {
-            updateStatusBasedOnDate(order);
+            if (order.getOrderDate().isBefore(deliveryDateThreshold)) {
+                order.setOrderStatus(OrderStatus.DELIVERING);
+            }
+            if (order.getOrderDate().isBefore(deliveryCompletionDateThreshold)) {
+                order.setOrderStatus(OrderStatus.DELIVERED);
+            }
             orderRepository.save(order);
-
-            log.info("해당 주문의 상태가 변경되었습니다.: {}", order.getId());
+            log.info(order.getId() + "번 주문 상태 업데이트: " + order.getOrderStatus());
         });
     }
+
 
     @Transactional(readOnly = true)
     public List<OrderResponseDto> getOrderList(String username, int page, int size) {
@@ -136,27 +146,27 @@ public class OrderService {
 
     private Order getOrderByIdOrThrow(Long orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
+                .orElseThrow(() -> new CommonException(ErrorCode.ORDER_NOT_FOUND));
     }
 
     private void validateProductAvailability(ProductDto product, int orderQuantity) {
         if (!"SELL".equals(product.getItemSellStatus())) {
-            throw new IllegalArgumentException("해당 상품은 판매 중이 아닙니다.");
+            throw new CommonException(ErrorCode.NOT_SELLING_PRODUCT);
         }
         if (orderQuantity > product.getQuantity()) {
-            throw new IllegalArgumentException("주문 수량이 재고 수량을 초과합니다.");
+            throw new CommonException(ErrorCode.OUT_OF_STOCK);
         }
     }
 
     private void validateCancellation(Order order) {
         if (order.getOrderStatus() == OrderStatus.CANCEL) {
-            throw new IllegalStateException("이미 취소된 주문입니다.");
+            throw new CommonException(ErrorCode.ALREADY_CANCELED_ORDER);
         }
         if (order.getOrderStatus() == OrderStatus.DELIVERING) {
-            throw new IllegalStateException("배송 중인 상품은 취소가 불가능합니다.");
+            throw new CommonException(ErrorCode.ALREADY_DELIVERING_ORDER);
         }
         if (LocalDateTime.now().isAfter(order.getOrderDate().plusDays(CANCELATION_PERIOD_DAYS))) {
-            throw new IllegalStateException("주문 완료 후 1일 이내에만 취소가 가능합니다.");
+            throw new CommonException(ErrorCode.CANCEL_PERIOD_EXPIRED);
         }
     }
 

@@ -1,10 +1,12 @@
 package my.userservice.member.dto;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import my.userservice.member.entity.Member;
 
 @Getter @Setter
+@NoArgsConstructor
 public class MemberResponseDto {
     private Long id;
 

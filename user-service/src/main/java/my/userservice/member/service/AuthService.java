@@ -5,6 +5,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.userservice.exception.CommonException;
+import my.userservice.exception.ErrorCode;
 import my.userservice.member.dto.AuthResponse;
 import my.userservice.member.dto.LoginRequestDto;
 import my.userservice.member.dto.LoginResponseDto;
@@ -44,7 +46,7 @@ public class AuthService {
             Member member = memberRepository.findByUsername(username);
 
             if (!passwordEncoder.matches(password, member.getPassword())) {
-                throw new IllegalArgumentException("회원 정보가 일치하지 않습니다.");
+                throw new CommonException(ErrorCode.NOT_MATCHED);
             }
 
             String role = member.getRole().name();
@@ -52,7 +54,7 @@ public class AuthService {
 
             // 블랙리스트에 리프레시 토큰이 있는지 확인
             if (isTokenBlacklisted(ext_refreshToken)) {
-                throw new IllegalArgumentException("블랙리스트에 등록된 토큰입니다.");
+                throw new CommonException(ErrorCode.NOT_AUTHORIZED);
             }
 
             String accessToken = jwtUtil.generateAccessToken(username, role);
@@ -80,7 +82,7 @@ public class AuthService {
 
         } catch (Exception e) {
             log.error("Error authenticating user", e);
-            throw new IllegalArgumentException("회원 정보가 일치하지 않습니다.");
+            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
         }
     }
 
@@ -91,20 +93,20 @@ public class AuthService {
             BlackList blackList = new BlackList(refreshToken, LocalDateTime.now());
             redisTemplate.opsForValue().set("refreshtoken:" + refreshToken, blackList, 7, TimeUnit.DAYS);
         } else {
-            throw new IllegalArgumentException("Invalid refresh token");
+            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
         }
     }
 
     public AuthResponse refreshAccessToken(String refreshToken) {
         if (!jwtUtil.validateToken(refreshToken)) {
-            throw new IllegalArgumentException("Invalid refresh token");
+            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
         }
 
         Claims claims = jwtUtil.getClaimsFromToken(refreshToken);
         String username = claims.getSubject();
 
         if (!refreshTokenRepository.existsByToken(refreshToken)) {
-            throw new IllegalArgumentException("Invalid refresh token");
+            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
         }
 
         String accessToken = jwtUtil.generateAccessToken(username, claims.get("role", String.class));
