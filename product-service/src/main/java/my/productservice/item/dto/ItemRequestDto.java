@@ -22,7 +22,6 @@ public class ItemRequestDto {
     @NotNull
     private Integer price;
 
-    @NotNull
     private Integer quantity;
 
     private Integer item_sell_count;

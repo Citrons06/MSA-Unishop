@@ -1,6 +1,6 @@
 package my.productservice.config;
 
-import my.productservice.item.kafka.event.OrderEvent;
+import my.productservice.kafka.event.OrderEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;

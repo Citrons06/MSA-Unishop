@@ -1,23 +1,12 @@
 package my.productservice.config;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
-<<<<<<< HEAD
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
-=======
-import io.github.resilience4j.spring6.circuitbreaker.configure.CircuitBreakerConfigurationProperties;
-import io.github.resilience4j.spring6.retry.configure.RetryConfigurationProperties;
-import io.github.resilience4j.timelimiter.TimeLimiterConfig;
-import org.springframework.beans.factory.annotation.Qualifier;
->>>>>>> main
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
 import org.springframework.cloud.client.circuitbreaker.Customizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-<<<<<<< HEAD
-=======
-import org.springframework.context.annotation.Primary;
->>>>>>> main
 
 import java.time.Duration;
 

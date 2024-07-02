@@ -1,4 +1,4 @@
-package my.productservice.item.kafka.event;
+package my.productservice.kafka.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

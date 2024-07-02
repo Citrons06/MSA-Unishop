@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import my.productservice.admin.service.ItemAdminService;
 import my.productservice.exception.CommonException;
 import my.productservice.exception.ErrorCode;
+import my.productservice.inventory.service.InventoryService;
+import my.productservice.item.dto.CreateItemResponse;
 import my.productservice.item.dto.ItemRequestDto;
 import my.productservice.item.dto.ItemResponseDto;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import java.util.Map;
 public class ItemApiAdminController {
 
     private final ItemAdminService itemAdminService;
+    private final InventoryService inventoryService;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createItem(@ModelAttribute ItemRequestDto itemRequestDto,
@@ -34,7 +37,10 @@ public class ItemApiAdminController {
         try {
             itemRequestDto.setItemImgFileList(itemImgFileList);
             itemRequestDto.setCategoryId(categoryId);
-            ItemResponseDto item = itemAdminService.createItem(itemRequestDto);
+
+            CreateItemResponse item = itemAdminService.createItem(itemRequestDto);
+            inventoryService.setStock(item.getItemId(), itemRequestDto.getQuantity());
+
             return ResponseEntity.ok().body(item);
         } catch (IOException e) {
             log.error("Item creation failed", e);
@@ -46,6 +52,7 @@ public class ItemApiAdminController {
     public ResponseEntity<?> getItem(@PathVariable("itemId") Long itemId) {
         try {
             ItemResponseDto item = itemAdminService.getItem(itemId);
+            item.setQuantity(inventoryService.getStock(item.getItemId()));
             return ResponseEntity.ok().body(item);
         } catch (Exception e) {
             log.error("Item not found", e);
@@ -60,6 +67,9 @@ public class ItemApiAdminController {
                                         @RequestParam("categoryId") Long categoryId) {
         try {
             ItemResponseDto item = itemAdminService.updateItem(itemId, itemRequestDto, itemImgFileList, categoryId);
+            inventoryService.setStock(item.getItemId(), itemRequestDto.getQuantity());
+            item.setQuantity(itemRequestDto.getQuantity());
+
             return ResponseEntity.ok().body(item);
         } catch (IOException e) {
             log.error("Item update failed", e);
@@ -71,6 +81,7 @@ public class ItemApiAdminController {
     public ResponseEntity<?> deleteItem(@PathVariable("itemId") Long itemId) {
         try {
             itemAdminService.deleteItem(itemId);
+            inventoryService.deleteStock(itemId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "delete success");
             return ResponseEntity.ok()
@@ -87,6 +98,7 @@ public class ItemApiAdminController {
                                       @RequestParam(value = "size", defaultValue = "8") int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
         Page<ItemResponseDto> items = itemAdminService.getItems(pageRequest);
+        items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
         return ResponseEntity.ok().body(items);
     }
 
@@ -99,8 +111,10 @@ public class ItemApiAdminController {
         Page<ItemResponseDto> items;
         if (categoryId != null) {
             items = itemAdminService.searchItemsByCategoryAndItemName(categoryId, search, pageRequest);
+            items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
         } else {
             items = itemAdminService.searchItemsByName(search, pageRequest);
+            items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
         }
         return ResponseEntity.ok().body(items);
     }
