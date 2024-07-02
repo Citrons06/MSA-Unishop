@@ -6,6 +6,7 @@ import my.productservice.admin.repository.CategoryRepository;
 import my.productservice.admin.repository.ItemImgRepository;
 import my.productservice.exception.CommonException;
 import my.productservice.exception.ErrorCode;
+import my.productservice.item.dto.CreateItemResponse;
 import my.productservice.item.dto.ItemRequestDto;
 import my.productservice.item.dto.ItemResponseDto;
 import my.productservice.item.entity.Category;
@@ -37,7 +38,7 @@ public class ItemAdminService {
     private final ItemImgRepository itemImgRepository;
     private final CategoryRepository categoryRepository;
 
-    public ItemResponseDto createItem(ItemRequestDto itemRequestDto) throws IOException {
+    public CreateItemResponse createItem(ItemRequestDto itemRequestDto) throws IOException {
         Category category = categoryRepository.findById(itemRequestDto.getCategoryId())
                 .orElseThrow(() -> new CommonException(ErrorCode.CATEGORY_NOT_FOUND));
 
@@ -61,7 +62,7 @@ public class ItemAdminService {
             itemImgList.add(itemImg);
         }
 
-        return new ItemResponseDto(item);
+        return new CreateItemResponse(item, itemRequestDto.getQuantity());
     }
 
     public ItemResponseDto updateItem(Long itemId, ItemRequestDto itemRequestDto, List<MultipartFile> itemImgFileList, Long categoryId) throws IOException {

@@ -1,8 +1,8 @@
-package my.productservice.item.kafka;
+package my.productservice.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.productservice.item.kafka.event.OrderEvent;
+import my.productservice.kafka.event.OrderEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 

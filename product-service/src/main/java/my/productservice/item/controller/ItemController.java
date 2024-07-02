@@ -3,6 +3,7 @@ package my.productservice.item.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.admin.service.CategoryAdminService;
+import my.productservice.inventory.service.InventoryService;
 import my.productservice.item.dto.CategoryResponseDto;
 import my.productservice.item.service.ItemReadService;
 import my.productservice.item.dto.ItemResponseDto;
@@ -23,6 +24,7 @@ import java.util.List;
 public class ItemController {
 
     private final ItemReadService itemService;
+    private final InventoryService inventoryService;
     private final CategoryAdminService categoryAdminService;
 
     @GetMapping("/item/list")
@@ -39,14 +41,18 @@ public class ItemController {
         if (search != null && !search.isEmpty()) {
             if (categoryId != null) {
                 items = itemService.searchItemsByCategoryAndItemName(categoryId, search, pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             } else {
                 items = itemService.searchItemsByName(search, pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             }
         } else {
             if (categoryId != null) {
                 items = itemService.getItemsByCategory(categoryId, pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             } else {
                 items = itemService.getItems(pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             }
         }
         model.addAttribute("items", items);
@@ -57,6 +63,7 @@ public class ItemController {
     @GetMapping("/item/{itemId}")
     public String getItem(Model model, @PathVariable Long itemId) {
         ItemResponseDto item = itemService.getItem(itemId);
+        item.setQuantity(inventoryService.getStock(itemId));
         model.addAttribute("item", item);
         return "items/itemDetail";
     }
@@ -65,6 +72,7 @@ public class ItemController {
     @GetMapping("/item/order")
     public String orderFromItem(Model model, Long itemId) {
         ItemResponseDto item = itemService.getItem(itemId);
+        item.setQuantity(inventoryService.getStock(itemId));
         model.addAttribute("item", item);
         return "order/orderConfirm";
     }

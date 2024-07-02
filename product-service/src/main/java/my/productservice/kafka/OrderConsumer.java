@@ -1,9 +1,8 @@
-package my.productservice.item.kafka;
+package my.productservice.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.productservice.inventory.service.InventoryService;
-import my.productservice.item.kafka.event.OrderEvent;
+import my.productservice.kafka.event.OrderEvent;
 import my.productservice.item.service.ItemWriteService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 public class OrderConsumer {
 
     private final ItemWriteService itemWriteService;
-    private final InventoryService inventoryService;
 
     @KafkaListener(topics = "order-topic", groupId = "product-group")
     public void consume(OrderEvent orderEvent) {

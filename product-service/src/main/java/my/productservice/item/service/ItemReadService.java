@@ -2,6 +2,10 @@ package my.productservice.item.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.productservice.exception.CommonException;
+import my.productservice.exception.ErrorCode;
+import my.productservice.inventory.entity.Inventory;
+import my.productservice.inventory.repository.InventoryRepository;
 import my.productservice.item.entity.Item;
 import my.productservice.item.repository.ItemRepository;
 import my.productservice.item.dto.ItemResponseDto;
@@ -17,29 +21,49 @@ import org.springframework.transaction.annotation.Transactional;
 public class ItemReadService {
 
     private final ItemRepository itemRepository;
+    private final InventoryRepository inventoryRepository;
 
     public Page<ItemResponseDto> getItems(PageRequest pageRequest) {
         Page<Item> items = itemRepository.findAll(pageRequest);
-        return items.map(ItemResponseDto::new);
+        return items.map(item -> {
+            int quantity = getStock(item.getId());
+            return new ItemResponseDto(item, quantity);
+        });
     }
 
     public Page<ItemResponseDto> searchItemsByName(String itemName, PageRequest pageRequest) {
         Page<Item> items = itemRepository.findByItemNameContaining(itemName, pageRequest);
-        return items.map(ItemResponseDto::new);
+        return items.map(item -> {
+            int quantity = getStock(item.getId());
+            return new ItemResponseDto(item, quantity);
+        });
     }
 
     public Page<ItemResponseDto> getItemsByCategory(Long categoryId, PageRequest pageRequest) {
         Page<Item> items = itemRepository.findByCategoryId(categoryId, pageRequest);
-        return items.map(ItemResponseDto::new);
+        return items.map(item -> {
+            int quantity = getStock(item.getId());
+            return new ItemResponseDto(item, quantity);
+        });
     }
 
     public Page<ItemResponseDto> searchItemsByCategoryAndItemName(Long categoryId, String itemName, PageRequest pageRequest) {
         Page<Item> items = itemRepository.findByCategoryIdAndItemNameContaining(categoryId, itemName, pageRequest);
-        return items.map(ItemResponseDto::new);
+        return items.map(item -> {
+            int quantity = getStock(item.getId());
+            return new ItemResponseDto(item, quantity);
+        });
     }
 
     public ItemResponseDto getItem(Long id) {
         Item item = itemRepository.findItemById(id);
-        return new ItemResponseDto(item);
+        int quantity = getStock(id);
+        return new ItemResponseDto(item, quantity);
+    }
+
+    private int getStock(Long itemId) {
+        Inventory inventory = inventoryRepository.findByItemId(itemId)
+                .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
+        return inventory.getInventoryStockQuantity();
     }
 }

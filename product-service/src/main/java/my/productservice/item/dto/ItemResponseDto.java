@@ -31,4 +31,22 @@ public class ItemResponseDto {
                 .collect(Collectors.toList());
         this.hasImages = !this.itemImgList.isEmpty();
     }
+
+    public ItemResponseDto(Item item) {
+        this.itemId = item.getId();
+        this.itemName = item.getItemName();
+        this.price = item.getPrice();
+        this.itemSellStatus = item.getItemSellStatus().name();
+        this.itemImgList = item.getItemImgList().stream()
+                .map(ItemImgResponseDto::new)
+                .collect(Collectors.toList());
+        this.hasImages = !this.itemImgList.isEmpty();
+    }
+
+    public ItemResponseDto(Long itemId, String itemName, int price, int quantity) {
+        this.itemId = itemId;
+        this.itemName = itemName;
+        this.price = price;
+        this.quantity = quantity;
+    }
 }

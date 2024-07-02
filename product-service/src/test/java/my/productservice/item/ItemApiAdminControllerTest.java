@@ -1,6 +1,5 @@
 package my.productservice.item;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import my.productservice.admin.service.ItemAdminService;
 import my.productservice.item.dto.ItemRequestDto;
 import my.productservice.item.dto.ItemResponseDto;

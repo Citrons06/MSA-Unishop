@@ -5,7 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.admin.service.CategoryAdminService;
 import my.productservice.admin.service.ItemAdminService;
+import my.productservice.inventory.dto.InventoryRequestDto;
+import my.productservice.inventory.service.InventoryService;
 import my.productservice.item.dto.CategoryResponseDto;
+import my.productservice.item.dto.CreateItemResponse;
 import my.productservice.item.dto.ItemRequestDto;
 import my.productservice.item.dto.ItemResponseDto;
 import org.springframework.data.domain.Page;
@@ -26,18 +29,20 @@ public class ItemAdminController {
 
     private final ItemAdminService itemAdminService;
     private final CategoryAdminService categoryAdminService;
+    private final InventoryService inventoryService;
 
     @GetMapping("/create")
     public String createItemForm(Model model) {
-        model.addAttribute(new ItemRequestDto());
+        model.addAttribute("item", new ItemRequestDto());
+        model.addAttribute("quantity", new InventoryRequestDto());
         model.addAttribute("categories", categoryAdminService.getCategories());
         return "admin/items/createItemForm";
     }
 
     @GetMapping("/update/{itemId}")
     public String updateItemForm(@PathVariable Long itemId, Model model) {
-        ItemResponseDto itemResponseDto = itemAdminService.getItem(itemId);
-        model.addAttribute("item", itemResponseDto);
+        model.addAttribute("item", itemAdminService.getItem(itemId));
+        model.addAttribute("quantity", inventoryService.getStock(itemId));
         model.addAttribute("categories", categoryAdminService.getCategories());
         return "admin/items/updateItemForm";
     }
@@ -56,14 +61,18 @@ public class ItemAdminController {
         if (search != null && !search.isEmpty()) {
             if (categoryId != null) {
                 items = itemAdminService.searchItemsByCategoryAndItemName(categoryId, search, pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             } else {
                 items = itemAdminService.searchItemsByName(search, pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             }
         } else {
             if (categoryId != null) {
                 items = itemAdminService.getItemsByCategory(categoryId, pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             } else {
                 items = itemAdminService.getItems(pageRequest);
+                items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             }
         }
         model.addAttribute("items", items);
@@ -76,11 +85,12 @@ public class ItemAdminController {
                              List<MultipartFile> itemImgFileList) {
         try {
             itemRequestDto.setItemImgFileList(itemImgFileList);
-            itemAdminService.createItem(itemRequestDto);
+            CreateItemResponse newItem = itemAdminService.createItem(itemRequestDto);
+            inventoryService.setStock(newItem.getItemId(), itemRequestDto.getQuantity());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return "redirect:/admin/item/list";
+        return "redirect:/product/admin/item/list";
     }
 
     @PutMapping("/update/{itemId}")
@@ -90,15 +100,17 @@ public class ItemAdminController {
                              Long categoryId) {
         try {
             itemAdminService.updateItem(itemId, itemRequestDto, itemImgFileList, categoryId);
+            inventoryService.updateStock(itemId, itemRequestDto.getQuantity());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return "redirect:/admin/item/list";
+        return "redirect:/product/admin/item/list";
     }
 
     @DeleteMapping("/delete/{itemId}")
     public String deleteItem(@PathVariable Long itemId) {
         itemAdminService.deleteItem(itemId);
-        return "redirect:/admin/item/list";
+        inventoryService.deleteStock(itemId);
+        return "redirect:/product/admin/item/list";
     }
 }
