@@ -32,7 +32,7 @@ public class InventoryApiController {
     // 재고 수정
     @PutMapping("/admin/update/{itemId}")
     public ResponseEntity<?> updateInventory(@PathVariable("itemId") Long itemId, @RequestBody UpdateQuantityRequest request) {
-        log.info(itemId + "번 상품의 재고가 수정됩니다. quantity: {}", request.getQuantity());
+        log.info("{}번 상품의 재고가 수정됩니다. quantity: {}", itemId, request.getQuantity());
         inventoryService.setStock(itemId, request.getQuantity());
         return ResponseEntity.ok(new InventoryResponseDto(itemId, request.getQuantity()));
     }
