@@ -43,7 +43,7 @@ public class ItemWriteService {
         inventoryRepository.save(inventory);
 
         item.updateItemSellCount(quantity);
-        log.info(item.getItemName() + " 상품의 재고가 업데이트 되었습니다. [재고: {}개]", inventory.getInventoryStockQuantity());
+        log.info("{} 상품의 재고가 업데이트 되었습니다. [재고: {}개]", item.getItemName(), inventory.getInventoryStockQuantity());
 
         return new ItemResponseDto(item, inventory.getInventoryStockQuantity());
     }

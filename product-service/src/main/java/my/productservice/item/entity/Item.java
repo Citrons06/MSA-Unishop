@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import my.productservice.common.entity.BaseEntity;
 import my.productservice.item.dto.ItemRequestDto;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,10 @@ public class Item extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
+
+    private boolean isPreOrder;  // 예약 구매 상품 여부
+
+    private LocalDateTime preOrderStartAt;  // 예약 구매 시작 시간
 
     public Item(ItemRequestDto itemRequestDto, Category category) {
         this.itemName = itemRequestDto.getItemName();

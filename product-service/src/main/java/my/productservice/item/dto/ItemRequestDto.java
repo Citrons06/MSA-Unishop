@@ -9,6 +9,7 @@ import lombok.Setter;
 import my.productservice.item.entity.ItemSellStatus;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,4 +33,8 @@ public class ItemRequestDto {
     private List<MultipartFile> itemImgFileList = new ArrayList<>();
 
     private Long categoryId;
+
+    private boolean isPreOrder;  // 예약 구매 상품 여부
+
+    private LocalDateTime preOrderStartAt;  // 예약 구매 시작 시간
 }

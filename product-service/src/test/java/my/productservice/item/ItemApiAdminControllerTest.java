@@ -1,6 +1,7 @@
 package my.productservice.item;
 
 import my.productservice.admin.service.ItemAdminService;
+import my.productservice.item.dto.CreateItemResponse;
 import my.productservice.item.dto.ItemRequestDto;
 import my.productservice.item.dto.ItemResponseDto;
 import org.junit.jupiter.api.DisplayName;
@@ -46,9 +47,9 @@ public class ItemApiAdminControllerTest {
 
         MockMultipartFile file = new MockMultipartFile("itemImgFileList", "image.jpg", MediaType.IMAGE_JPEG_VALUE, "image".getBytes());
 
-        ItemResponseDto itemResponse = new ItemResponseDto(1L, "item1", 100, 10);
+        CreateItemResponse cartItemResponse = new CreateItemResponse(1L, "item1", 100, 10);
 
-        Mockito.when(itemAdminService.createItem(any(ItemRequestDto.class))).thenReturn(itemResponse);
+        Mockito.when(itemAdminService.createItem(any(ItemRequestDto.class))).thenReturn(cartItemResponse);
 
         mockMvc.perform(multipart("/api/product/admin/create")
                         .file(file)
