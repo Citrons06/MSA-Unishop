@@ -10,11 +10,9 @@ public class InventoryRequestDto {
 
     private Long itemId;
     private Integer inventoryStockQuantity;
-    private Integer inventoryVer;
 
-    public InventoryRequestDto(Long itemId, Integer inventoryStockQuantity, Integer inventoryVer) {
+    public InventoryRequestDto(Long itemId, Integer inventoryStockQuantity) {
         this.itemId = itemId;
         this.inventoryStockQuantity = inventoryStockQuantity;
-        this.inventoryVer = inventoryVer;
     }
 }

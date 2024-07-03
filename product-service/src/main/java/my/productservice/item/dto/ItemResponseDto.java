@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import my.productservice.item.entity.Item;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +18,9 @@ public class ItemResponseDto {
     private int quantity;
     private boolean hasImages;
     private String itemSellStatus;
+    private boolean isPreOrder;  // 예약 구매 상품 여부
+
+    private LocalDateTime preOrderStartAt;  // 예약 구매 시작 시간
 
     private List<ItemImgResponseDto> itemImgList = new ArrayList<>();
 
@@ -30,6 +34,8 @@ public class ItemResponseDto {
                 .map(ItemImgResponseDto::new)
                 .collect(Collectors.toList());
         this.hasImages = !this.itemImgList.isEmpty();
+        this.isPreOrder = item.isPreOrder();
+        this.preOrderStartAt = item.getPreOrderStartAt();
     }
 
     public ItemResponseDto(Item item) {

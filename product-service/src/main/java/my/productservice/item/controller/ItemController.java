@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItemController {
 
-    private final ItemReadService itemService;
+    private final ItemReadService itemReadService;
     private final InventoryService inventoryService;
     private final CategoryAdminService categoryAdminService;
 
@@ -40,18 +40,18 @@ public class ItemController {
 
         if (search != null && !search.isEmpty()) {
             if (categoryId != null) {
-                items = itemService.searchItemsByCategoryAndItemName(categoryId, search, pageRequest);
+                items = itemReadService.searchItemsByCategoryAndItemName(categoryId, search, pageRequest);
                 items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             } else {
-                items = itemService.searchItemsByName(search, pageRequest);
+                items = itemReadService.searchItemsByName(search, pageRequest);
                 items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             }
         } else {
             if (categoryId != null) {
-                items = itemService.getItemsByCategory(categoryId, pageRequest);
+                items = itemReadService.getItemsByCategory(categoryId, pageRequest);
                 items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             } else {
-                items = itemService.getItems(pageRequest);
+                items = itemReadService.getItems(pageRequest);
                 items.forEach(item -> item.setQuantity(inventoryService.getStock(item.getItemId())));
             }
         }
@@ -62,7 +62,7 @@ public class ItemController {
 
     @GetMapping("/item/{itemId}")
     public String getItem(Model model, @PathVariable Long itemId) {
-        ItemResponseDto item = itemService.getItem(itemId);
+        ItemResponseDto item = itemReadService.getItem(itemId);
         item.setQuantity(inventoryService.getStock(itemId));
         model.addAttribute("item", item);
         return "items/itemDetail";
@@ -71,7 +71,7 @@ public class ItemController {
     // 상품 상세 화면에서 바로 주문하기
     @GetMapping("/item/order")
     public String orderFromItem(Model model, Long itemId) {
-        ItemResponseDto item = itemService.getItem(itemId);
+        ItemResponseDto item = itemReadService.getItem(itemId);
         item.setQuantity(inventoryService.getStock(itemId));
         model.addAttribute("item", item);
         return "order/orderConfirm";

@@ -3,13 +3,11 @@ package my.productservice.inventory.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import my.productservice.inventory.dto.InventoryRequestDto;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.index.Indexed;
 
 @Getter
-@NoArgsConstructor
 @RedisHash("inventory")
 public class Inventory {
 
@@ -37,11 +35,8 @@ public class Inventory {
         this.inventoryStockQuantity = quantity;
     }
 
-    public void updateStockQuantity(int quantity) {
-        this.inventoryStockQuantity += quantity;
-    }
-
-    public void increaseInventoryVer() {
-        this.inventoryVer++;
+    public Inventory() {
+        this.itemId = 0L;
+        this.inventoryStockQuantity = 0;
     }
 }
