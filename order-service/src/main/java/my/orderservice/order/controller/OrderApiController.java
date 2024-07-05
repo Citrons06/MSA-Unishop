@@ -42,7 +42,6 @@ public class OrderApiController {
         return ResponseEntity.ok(order);
     }
 
-    // 주문 생성
     @PostMapping
     @CircuitBreaker(name = "orderServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     public ResponseEntity<?> createOrder(HttpServletRequest request, @RequestBody OrderRequestDto orderRequestDto) {

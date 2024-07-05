@@ -1,4 +1,4 @@
-package my.orderservice.order.kafka.event;
+package my.orderservice.kafka.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,9 +8,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderEvent {
+
     private String status;
-    private Long memberId;
     private Long itemId;
+    private Long memberId;
     private String itemName;
     private String city;
     private String street;
@@ -19,4 +20,5 @@ public class OrderEvent {
     private String orderUsername;
     private int quantity;
     private int orderPrice;
+
 }

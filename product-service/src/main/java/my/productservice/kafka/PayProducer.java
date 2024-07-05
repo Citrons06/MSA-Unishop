@@ -9,11 +9,11 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OrderProducer {
+public class PayProducer {
 
     private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
 
-    private static final String TOPIC = "product-topic";
+    private static final String TOPIC = "pay-topic";
 
     public void sendProductEvent(OrderEvent productEvent) {
         log.info("Sending product event: {}", productEvent);

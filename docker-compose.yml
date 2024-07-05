@@ -90,13 +90,54 @@ services:
     volumes:
       - ./data/db-product:/var/lib/postgresql/data
 
-  redis:
+  db-pay:
+    image: postgres:latest
+    container_name: db-pay
+    env_file:
+      - pay-service/db.env
+    ports:
+      - 5436:5432
+    volumes:
+      - ./data/db-pay:/var/lib/postgresql/data
+
+  redis-user:
     image: redis:latest
-    container_name: db-redis
+    container_name: redis-user
     ports:
       - "6379:6379"
     volumes:
-      - ./redis-data:/data
+      - ./conf:/usr/local/etc/redis/
+
+  redis-master:
+    image: redis:latest
+    container_name: redis-master
+    ports:
+      - "6380:6379"
+    command: /usr/local/bin/redis-server --appendonly yes
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - ./conf:/usr/local/etc/redis/
+    networks:
+      - redis-network
+
+  redis-slave:
+    image: redis:latest
+    container_name: redis-slave
+    ports:
+      - "6381:6379"
+    command: /usr/local/bin/redis-server --slaveof redis-master 6379
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master
+      - ALLOW_EMPTY_PASSWORD=yes
+    depends_on:
+      - redis-master
+    volumes:
+      - ./conf:/usr/local/etc/redis/
+    networks:
+      - redis-network
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -108,3 +149,7 @@ services:
       - kafka.env
     volumes:
       - ./kafka-data:/var/lib/kafka/data
+
+networks:
+  redis-network:
+    driver: bridge

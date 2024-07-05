@@ -13,8 +13,8 @@ import my.orderservice.order.dto.OrderResponseDto;
 import my.orderservice.order.entity.Order;
 import my.orderservice.order.entity.OrderItem;
 import my.orderservice.order.entity.OrderStatus;
-import my.orderservice.order.kafka.OrderProducer;
-import my.orderservice.order.kafka.event.OrderEvent;
+import my.orderservice.kafka.OrderProducer;
+import my.orderservice.kafka.event.OrderEvent;
 import my.orderservice.order.repository.OrderRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,37 +35,15 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductAdapter productAdapter;
-    private final UserAdapter userAdapter;
-    private final OrderProducer orderProducer;
 
     private static final int CANCELATION_PERIOD_DAYS = 1;  // 주문 완료 후 1일 이내 취소 가능
     private static final int DELIVERY_PERIOD_DAYS = 1;  // 주문 완료 후 1일 이내 배송
     private static final int DELIVERY_COMPLETION_PERIOD_DAYS = 2;  // 주문 완료 후 2일 이내 배송 완료
     private static final int RETURN_REQUEST_PERIOD_DAYS = 3;  // 반품 신청 기간 3일
 
+    // 결제 서버에서 결제에 성공한 것을 확인하면 주문 생성
     public OrderRequestDto order(String username, OrderRequestDto orderRequestDto) {
-        // 회원, 상품 정보 가져오기
-        UserDto member = userAdapter.getUserByUsername(username);
-        ProductDto product = productAdapter.getItem(orderRequestDto.getItemId());
-        log.info("ProductDto retrieved: {}, {}", product.getItemId(), product.getItemName());
-
-        try {
-            validateProductAvailability(product, orderRequestDto.getQuantity());
-
-            // 주문 이벤트 발행
-            OrderEvent orderEvent = new OrderEvent(
-                    "ORDER_CREATED", member.getId(), product.getItemId(), product.getItemName(), orderRequestDto.getCity(),
-                    orderRequestDto.getStreet(), orderRequestDto.getZipcode(),
-                    orderRequestDto.getOrderTel(), orderRequestDto.getOrderUsername(),
-                    orderRequestDto.getQuantity(), orderRequestDto.getOrderPrice()
-            );
-            orderProducer.sendOrderEvent(orderEvent);
-
-            return orderRequestDto;
-        } catch (Exception e) {
-            log.error("Error during order creation", e);
-            throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
+        return new OrderRequestDto();
     }
 
     public void cancelOrder(Long orderId) {

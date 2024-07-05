@@ -1,6 +1,5 @@
 package my.productservice.item.service;
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.exception.CommonException;
@@ -39,10 +38,10 @@ public class ItemWriteService {
             throw new CommonException(ErrorCode.STOCK_NOT_ENOUGH);
         }
 
-        inventory.setInventoryStockQuantity(currentStock - quantity);
+        inventory.setInventoryStockQuantity(currentStock + quantity);
         inventoryRepository.save(inventory);
 
-        item.updateItemSellCount(quantity);
+        item.updateItemSellCount(-quantity);
         log.info("{} 상품의 재고가 업데이트 되었습니다. [재고: {}개]", item.getItemName(), inventory.getInventoryStockQuantity());
 
         return new ItemResponseDto(item, inventory.getInventoryStockQuantity());

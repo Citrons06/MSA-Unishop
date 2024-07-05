@@ -1,18 +1,17 @@
 package my.productservice.config;
 
 import my.productservice.kafka.event.OrderEvent;
+import my.productservice.kafka.event.PayEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.core.*;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
@@ -24,40 +23,78 @@ import java.util.Map;
 @Configuration
 public class KafkaConfig {
 
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
+
     @Bean
-    public ProducerFactory<String, OrderEvent> producerFactory() {
+    public ProducerFactory<String, OrderEvent> orderProducerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, "true");
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
     @Bean
-    public KafkaTemplate<String, OrderEvent> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+    public KafkaTemplate<String, OrderEvent> orderKafkaTemplate() {
+        return new KafkaTemplate<>(orderProducerFactory());
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, OrderEvent> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, OrderEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
-        return factory;
+    public ProducerFactory<String, PayEvent> payProducerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(configProps);
     }
 
     @Bean
-    public DefaultKafkaConsumerFactory<String, OrderEvent> consumerFactory() {
+    public KafkaTemplate<String, PayEvent> payKafkaTemplate() {
+        return new KafkaTemplate<>(payProducerFactory());
+    }
+
+    @Bean
+    public ConsumerFactory<String, OrderEvent> orderConsumerFactory() {
         JsonDeserializer<OrderEvent> deserializer = new JsonDeserializer<>(OrderEvent.class);
-        deserializer.addTrustedPackages("*");
-        deserializer.setTypeMapper(new DefaultJackson2JavaTypeMapper());
+        deserializer.addTrustedPackages("my.orderservice.kafka.event");
 
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "product-group");
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "order-group");
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
 
         return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(), deserializer);
     }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, OrderEvent> orderKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, OrderEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(orderConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, PayEvent> payConsumerFactory() {
+        JsonDeserializer<PayEvent> deserializer = new JsonDeserializer<>(PayEvent.class);
+        deserializer.addTrustedPackages("my.productservice.kafka.event", "my.orderservice.kafka.event", "my.payservice.kafka.event");
+        deserializer.setTypeMapper(new DefaultJackson2JavaTypeMapper());
+
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "pay-group");
+        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
+
+        return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(), deserializer);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, PayEvent> payKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, PayEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(payConsumerFactory());
+        return factory;
+    }
+
 }

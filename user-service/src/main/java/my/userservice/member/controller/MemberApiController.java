@@ -74,7 +74,8 @@ public class MemberApiController {
 
         try {
             authService.logout(refreshToken);
-            return ResponseEntity.ok("로그아웃 되었습니다.");
+            return ResponseEntity.ok().contentType(APPLICATION_JSON)
+                    .body("{\"msg\" : \"로그아웃 되었습니다.\"}");
         } catch (IllegalArgumentException e) {
             log.error("Invalid refresh token", e);
             throw new CommonException(ErrorCode.NOT_AUTHORIZED);

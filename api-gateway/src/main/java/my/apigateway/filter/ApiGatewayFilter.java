@@ -85,6 +85,9 @@ public class ApiGatewayFilter extends AbstractGatewayFilterFactory<ApiGatewayFil
         if (path.startsWith("/api/order") && !"USER".equals(role) && !"ADMIN".equals(role)) {
             return true; // 회원과 관리자가 아닌 경우
         }
+        if (path.startsWith("/api/pay") && !"USER".equals(role) && !"ADMIN".equals(role)) {
+            return true; // 회원과 관리자가 아닌 경우
+        }
         return false;
     }
 }

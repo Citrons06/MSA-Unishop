@@ -1,8 +1,8 @@
-package my.orderservice.order.kafka;
+package my.orderservice.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.orderservice.order.kafka.event.OrderEvent;
+import my.orderservice.kafka.event.OrderEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 

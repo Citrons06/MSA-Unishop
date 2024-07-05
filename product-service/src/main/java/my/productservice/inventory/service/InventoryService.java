@@ -38,6 +38,7 @@ public class InventoryService {
         if (newQuantity < 0) {
             throw new CommonException(ErrorCode.STOCK_NOT_ENOUGH);
         }
+
         inventory.setInventoryStockQuantity(newQuantity);
         inventoryRepository.save(inventory);
     }
