@@ -16,6 +16,8 @@ import my.payservice.pay.repository.PayRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Slf4j
 @Service
 @Transactional
@@ -27,12 +29,15 @@ public class PayService {
     private final ProductProducer productProducer;
 
     public void checkQuantity(PayRequest payRequest) {
-        // 상품 재고 정보 조회 이벤트 발행
-        PayEvent getItemEvent = new PayEvent("GET_ITEM", payRequest.getUsername(),
-                payRequest.getItemId(), payRequest.getQuantity(),
-                payRequest.getAmount(), 0);
-
-        productProducer.sendProductEvent(getItemEvent);
+        try {
+            // 상품 재고 정보 조회 이벤트 발행
+            PayEvent getItemEvent = new PayEvent("GET_ITEM", payRequest.getUsername(),
+                    payRequest.getItemId(), payRequest.getQuantity(),
+                    payRequest.getAmount(), 0);
+            productProducer.sendProductEvent(getItemEvent);
+        } catch (CommonException e) {
+            log.info("Failed to get item information: {}", e.getMessage());
+        }
     }
 
     // 상품 재고 정보 처리
@@ -62,8 +67,6 @@ public class PayService {
                         payEvent.getAmount(), payEvent.getItemQuantity());
                 payProducer.sendPayEvent(payCancelEvent);
 
-                pay.setPayStatus(PayStatus.PAY_CANCEL);
-                payRepository.save(pay);
                 throw new CommonException(ErrorCode.PAY_CANCEL);
             }
         }
@@ -71,7 +74,14 @@ public class PayService {
 
     // 결제 완료 시뮬레이션
     public void processPayment(ProcessRequest processRequest, String username) {
-        Pay findPay = payRepository.findByUsernameAndPayStatus(username, PayStatus.PAY_START);
+        Optional<Pay> findPayOpt =
+                payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(username, PayStatus.PAY_START);
+
+        if (findPayOpt.isEmpty()) {
+            throw new CommonException(ErrorCode.INVALID_PAY_STATUS);
+        }
+
+        Pay findPay = findPayOpt.get();
 
         // 20% 확률로 고객 귀책에 의한 결제 실패
         if (Math.random() <= 0.2) {
@@ -97,9 +107,9 @@ public class PayService {
     }
 
     public void checkPayStatus(String username) {
-        Pay findPay = payRepository.findByUsernameAndPayStatus(username, PayStatus.PAY_START);
+        Optional<Pay> findPayOpt = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(username, PayStatus.PAY_START);
 
-        if (findPay == null) {
+        if (findPayOpt.isEmpty()) {
             throw new CommonException(ErrorCode.INVALID_PAY_STATUS);
         }
     }

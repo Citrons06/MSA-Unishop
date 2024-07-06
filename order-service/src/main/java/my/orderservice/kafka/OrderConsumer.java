@@ -22,7 +22,7 @@ public class OrderConsumer {
     private final OrderRepository orderRepository;
     private final UserAdapter userAdapter;
 
-    @KafkaListener(topics = ORDER_TOPIC, groupId = ORDER_GROUP_ID)
+    @KafkaListener(topics = ORDER_TOPIC, groupId = ORDER_GROUP_ID, containerFactory = "processKafkaListenerContainerFactory")
     public void consume(ProcessEvent processEvent) {
         log.info("Consumed event: {}", processEvent);
 

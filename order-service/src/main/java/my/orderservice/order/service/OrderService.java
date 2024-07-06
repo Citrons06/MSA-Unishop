@@ -87,7 +87,7 @@ public class OrderService {
         LocalDateTime deliveryDateThreshold = now.minusDays(DELIVERY_PERIOD_DAYS);
         LocalDateTime deliveryCompletionDateThreshold = now.minusDays(DELIVERY_COMPLETION_PERIOD_DAYS);
 
-        List<Order> orders = orderRepository.findOrdersForStatusUpdate(OrderStatus.ORDERED, deliveryDateThreshold, deliveryCompletionDateThreshold);
+        List<Order> orders = orderRepository.findOrdersForStatusUpdate(OrderStatus.ORDER_COMPLETE, deliveryDateThreshold, deliveryCompletionDateThreshold);
 
         orders.forEach(order -> {
             if (order.getOrderDate().isBefore(deliveryDateThreshold)) {

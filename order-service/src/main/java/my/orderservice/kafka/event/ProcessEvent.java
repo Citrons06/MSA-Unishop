@@ -15,7 +15,6 @@ public class ProcessEvent {
     private Long itemId;
     private int quantity;
     private int amount;
-    private String payStatus;
     private String orderAddress;
     private String orderTel;
 }

@@ -1,7 +1,6 @@
 package my.payservice.pay.controller;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.payservice.exception.CommonException;
@@ -30,7 +29,7 @@ public class PayApiController {
     private final PayService payService;
 
     @PostMapping("/enter")
-    @CircuitBreaker(name = "orderServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "payServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     public ResponseEntity<?> enterPayment(@RequestBody PayRequest request, @RequestHeader("X-User-Name") String username) {
         try {
             log.info("Enter payment request: {}", request);
@@ -52,17 +51,23 @@ public class PayApiController {
         }
     }
 
-
     @PostMapping("/process")
-    public ResponseEntity<Void> processPayment(@RequestBody ProcessRequest request, @RequestHeader("X-User-Name") String username) {
+    public ResponseEntity<?> processPayment(@RequestBody ProcessRequest request, @RequestHeader("X-User-Name") String username) {
         // PAY_START 상태의 결제가 없으면 에러 발생
-        payService.checkPayStatus(username);
-        request.setUsername(username);
-        payService.processPayment(request, username);
-        return ResponseEntity.ok().build();  // 결제 완료 혹은 고객 귀책 결제 실패
+        try {
+            payService.checkPayStatus(username);
+            request.setUsername(username);
+            payService.processPayment(request, username);
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"msg\" : \"결제를 완료하였습니다.\"}");  // 결제 성공
+        } catch (CommonException e) {
+            log.error("Exception caught in controller: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"msg\" : \"결제를 실패하였습니다.\"}");
+        }
     }
 
-    public ResponseEntity<?> fallbackMethod(HttpServletRequest request, PayRequest payRequest, Throwable throwable) {
+    public ResponseEntity<?> fallbackMethod(PayRequest payRequest, String username, Throwable throwable) {
         String errorMessage = "Pay service is currently unavailable. Please try again later.";
         log.error("Fallback method invoked due to: ", throwable);
 
