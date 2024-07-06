@@ -1,17 +1,21 @@
-package my.payservice.kafka.event;
+package my.payservice.pay.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductEvent {
-    private String status;
+public class ProcessRequest {
+
     private String username;
+    private String orderUsername;
     private Long itemId;
     private int quantity;
     private int amount;
     private String payStatus;
+    private String orderAddress;
+    private String orderTel;
 }

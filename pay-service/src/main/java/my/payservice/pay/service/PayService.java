@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import my.payservice.exception.CommonException;
 import my.payservice.exception.ErrorCode;
 import my.payservice.kafka.PayProducer;
+import my.payservice.kafka.ProductProducer;
+import my.payservice.kafka.event.ProcessEvent;
 import my.payservice.pay.dto.PayRequest;
-import my.payservice.pay.dto.PayResponse;
+import my.payservice.pay.dto.ProcessRequest;
 import my.payservice.pay.entity.Pay;
 import my.payservice.pay.entity.PayStatus;
 import my.payservice.kafka.event.PayEvent;
@@ -22,49 +24,63 @@ public class PayService {
 
     private final PayProducer payProducer;
     private final PayRepository payRepository;
+    private final ProductProducer productProducer;
 
-    // 결제 진입 시뮬레이션
-    public void enterPayment(PayRequest payRequest) {
-        // 재고 확인 후 재고가 request 수량보다 적으면 실패
+    public void checkQuantity(PayRequest payRequest) {
+        // 상품 재고 정보 조회 이벤트 발행
+        PayEvent getItemEvent = new PayEvent("GET_ITEM", payRequest.getUsername(),
+                payRequest.getItemId(), payRequest.getQuantity(),
+                payRequest.getAmount(), 0);
 
+        productProducer.sendProductEvent(getItemEvent);
+    }
 
-        // 재고 차감 이벤트 발행
-        PayEvent stockDeduct = new PayEvent("STOCK_DEDUCT", payRequest.getUsername(), payRequest.getItemId(), payRequest.getQuantity(), payRequest.getAmount(), "PAY_START");
-        payProducer.sendPayEvent(stockDeduct);
+    // 상품 재고 정보 처리
+    public void enterPayment(PayEvent payEvent) {
+        // 재고 확인 후 재고가 주문 수량보다 적으면 실패 처리
+        if (payEvent.getQuantity() > payEvent.getItemQuantity()) {
+            throw new CommonException(ErrorCode.NOT_ENOUGH_STOCK);
+        } else {
+            // 재고 차감 이벤트 발행
+            PayEvent stockDeduct = new PayEvent("STOCK_DEDUCT", payEvent.getUsername(),
+                    payEvent.getItemId(), payEvent.getQuantity(),
+                    payEvent.getAmount(), payEvent.getItemQuantity());
+            payProducer.sendPayEvent(stockDeduct);
 
-        Pay pay = Pay.builder()
-                .amount(payRequest.getAmount())
-                .payStatus(PayStatus.PAY_START)
-                .username(payRequest.getUsername())
-                .build();
-        payRepository.save(pay);
-
-        // 20% 확률로 고객 변심에 의한 이탈
-        if (Math.random() <= 0.2) {
-            // 재고 회복 이벤트 발행
-            PayEvent payEvent = new PayEvent("STOCK_RECOVER", payRequest.getUsername(), payRequest.getItemId(), payRequest.getQuantity(), payRequest.getAmount(), "PAY_CANCEL");
-            payProducer.sendPayEvent(payEvent);
-            pay.setPayStatus(PayStatus.PAY_CANCEL);
+            Pay pay = Pay.builder()
+                    .amount(payEvent.getAmount())
+                    .payStatus(PayStatus.PAY_START)
+                    .username(payEvent.getUsername())
+                    .build();
             payRepository.save(pay);
 
-            throw new CommonException(ErrorCode.PAY_CANCEL);
+            // 20% 확률로 고객 변심에 의한 이탈
+            if (Math.random() <= 0.2) {
+                // 재고 회복 이벤트 발행
+                PayEvent payCancelEvent = new PayEvent("PAY_CANCEL", payEvent.getUsername(),
+                        payEvent.getItemId(), payEvent.getQuantity(),
+                        payEvent.getAmount(), payEvent.getItemQuantity());
+                payProducer.sendPayEvent(payCancelEvent);
+
+                pay.setPayStatus(PayStatus.PAY_CANCEL);
+                payRepository.save(pay);
+                throw new CommonException(ErrorCode.PAY_CANCEL);
+            }
         }
     }
 
     // 결제 완료 시뮬레이션
-    public void processPayment(PayRequest payRequest) {
-        Pay findPay = payRepository.findByUsernameAndPayStatus(payRequest.getUsername(), PayStatus.PAY_START);
-
-        if (!PayStatus.PAY_START.equals(findPay.getPayStatus())) {
-            throw new CommonException(ErrorCode.INVALID_PAY_STATUS);
-        }
+    public void processPayment(ProcessRequest processRequest, String username) {
+        Pay findPay = payRepository.findByUsernameAndPayStatus(username, PayStatus.PAY_START);
 
         // 20% 확률로 고객 귀책에 의한 결제 실패
         if (Math.random() <= 0.2) {
             findPay.setPayStatus(PayStatus.PAY_FAILED);
 
             // 결제 실패 이벤트 발행
-            PayEvent payEvent = new PayEvent("PAY_FAILED", payRequest.getUsername(), payRequest.getItemId(), payRequest.getQuantity(), payRequest.getAmount(), "PAY_CANCEL");
+            PayEvent payEvent = new PayEvent("PAY_FAILED", processRequest.getOrderUsername(),
+                    processRequest.getItemId(), processRequest.getQuantity(),
+                    processRequest.getAmount(), 0);
             payProducer.sendPayEvent(payEvent);
 
             throw new CommonException(ErrorCode.PAY_FAILED);
@@ -73,8 +89,11 @@ public class PayService {
         findPay.setPayStatus(PayStatus.PAY_COMPLETE);
 
         // 결제 완료 이벤트 발행
-        PayEvent payEvent = new PayEvent("PAY_COMPLETE", payRequest.getUsername(), payRequest.getItemId(), payRequest.getQuantity(), payRequest.getAmount(), "PAY_COMPLETE");
-        payProducer.sendPayEvent(payEvent);
+        ProcessEvent processEvent = new ProcessEvent("PAY_COMPLETE", username, processRequest.getOrderUsername(),
+                processRequest.getItemId(), processRequest.getQuantity(),
+                processRequest.getAmount(),
+                processRequest.getOrderAddress(), processRequest.getOrderTel());
+        payProducer.sendProcessEvent(processEvent);
     }
 
     public void checkPayStatus(String username) {

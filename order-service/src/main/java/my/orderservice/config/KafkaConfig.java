@@ -1,7 +1,7 @@
 package my.orderservice.config;
 
 import my.orderservice.kafka.event.OrderEvent;
-import my.orderservice.kafka.event.PayEvent;
+import my.orderservice.kafka.event.ProcessEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -61,7 +61,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ProducerFactory<String, PayEvent> payProducerFactory() {
+    public ProducerFactory<String, ProcessEvent> payProducerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -70,13 +70,13 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, PayEvent> payKafkaTemplate() {
+    public KafkaTemplate<String, ProcessEvent> payKafkaTemplate() {
         return new KafkaTemplate<>(payProducerFactory());
     }
 
     @Bean
-    public ConsumerFactory<String, PayEvent> payConsumerFactory() {
-        JsonDeserializer<PayEvent> deserializer = new JsonDeserializer<>(PayEvent.class);
+    public ConsumerFactory<String, ProcessEvent> payConsumerFactory() {
+        JsonDeserializer<ProcessEvent> deserializer = new JsonDeserializer<>(ProcessEvent.class);
         deserializer.addTrustedPackages("*");
 
         Map<String, Object> configProps = new HashMap<>();
@@ -89,8 +89,8 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, PayEvent> payKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, PayEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
+    public ConcurrentKafkaListenerContainerFactory<String, ProcessEvent> payKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, ProcessEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(payConsumerFactory());
         return factory;
     }

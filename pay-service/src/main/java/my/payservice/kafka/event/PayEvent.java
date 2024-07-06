@@ -14,5 +14,5 @@ public class PayEvent {
     private Long itemId;
     private int quantity;
     private int amount;
-    private String payStatus;
+    private int itemQuantity;
 }

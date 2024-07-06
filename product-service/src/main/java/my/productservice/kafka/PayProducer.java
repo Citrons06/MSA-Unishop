@@ -2,7 +2,7 @@ package my.productservice.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.productservice.kafka.event.OrderEvent;
+import my.productservice.kafka.event.PayEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -11,12 +11,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PayProducer {
 
-    private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
+    private final KafkaTemplate<String, PayEvent> kafkaTemplate;
 
     private static final String TOPIC = "pay-topic";
 
-    public void sendProductEvent(OrderEvent productEvent) {
-        log.info("Sending product event: {}", productEvent);
-        kafkaTemplate.send(TOPIC, productEvent);
+    public void sendProductEvent(PayEvent payEvent) {
+        log.info("Sending product event: {}", payEvent);
+        kafkaTemplate.send(TOPIC, payEvent);
     }
 }

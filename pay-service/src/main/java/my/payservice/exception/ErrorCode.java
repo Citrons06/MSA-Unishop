@@ -15,7 +15,8 @@ public enum ErrorCode {
     PAY_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PAY_FAILED"),
     PAY_CANCEL(HttpStatus.BAD_REQUEST, "PAY_CANCEL"),
     PAY_NOT_FOUND(HttpStatus.NOT_FOUND, "PAY_NOT_FOUND"),
-    INVALID_PAY_STATUS(HttpStatus.BAD_REQUEST, "INVALID_PAY_STATUS");
+    INVALID_PAY_STATUS(HttpStatus.BAD_REQUEST, "INVALID_PAY_STATUS"),
+    NOT_ENOUGH_STOCK(HttpStatus.BAD_REQUEST, "NOT_ENOUGH_STOCK");
 
     private final HttpStatus httpStatus;
     private final String message;

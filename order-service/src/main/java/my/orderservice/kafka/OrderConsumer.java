@@ -2,9 +2,10 @@ package my.orderservice.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.orderservice.kafka.event.OrderEvent;
-import my.orderservice.kafka.event.PayEvent;
+import my.orderservice.adapter.UserAdapter;
+import my.orderservice.kafka.event.ProcessEvent;
 import my.orderservice.order.entity.Order;
+import my.orderservice.order.entity.OrderStatus;
 import my.orderservice.order.repository.OrderRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -15,22 +16,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderConsumer {
 
-    private static final String ORDER_TOPIC = "pay-topic";
+    private static final String ORDER_TOPIC = "process-topic";
     private static final String ORDER_GROUP_ID = "order-group";
 
     private final OrderRepository orderRepository;
+    private final UserAdapter userAdapter;
 
     @KafkaListener(topics = ORDER_TOPIC, groupId = ORDER_GROUP_ID)
-    public void consume(PayEvent payEvent) {
-        log.info("Consumed event: {}", payEvent);
+    public void consume(ProcessEvent processEvent) {
+        log.info("Consumed event: {}", processEvent);
 
         try {
-            switch (payEvent.getStatus()) {
-                case "ORDER_CREATE":
-                    createOrder(payEvent);
-                    break;
-                default:
-                    log.error("Invalid event status: {}", payEvent.getStatus());
+            if (processEvent.getStatus().equals("ORDER_CREATE")) {
+                createOrder(processEvent);
+            } else {
+                log.error("Invalid event status: {}", processEvent.getStatus());
             }
         } catch (Exception e) {
             log.error("Failed to process event", e);
@@ -38,10 +38,14 @@ public class OrderConsumer {
     }
 
     @Transactional
-    public void createOrder(PayEvent payEvent) {
+    public void createOrder(ProcessEvent processEvent) {
         Order order = Order.builder()
-                .orderPrice(payEvent.getAmount())
-                .orderUsername(payEvent.getUsername())
+                .orderUsername(processEvent.getOrderUsername())
+                .orderAddress(processEvent.getOrderAddress())
+                .orderPrice(processEvent.getAmount())
+                .memberId(userAdapter.getUserByUsername(processEvent.getUsername()).getId())
+                .orderTel(processEvent.getOrderTel())
+                .orderStatus(OrderStatus.ORDER_COMPLETE)
                 .build();
         orderRepository.save(order);
     }

@@ -2,7 +2,7 @@ package my.orderservice.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.orderservice.kafka.event.PayEvent;
+import my.orderservice.kafka.event.ProcessEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -11,15 +11,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PayProducer {
 
-    private final KafkaTemplate<String, PayEvent> kafkaTemplate;
+    private final KafkaTemplate<String, ProcessEvent> kafkaTemplate;
 
     private static final String TOPIC = "pay-topic";
 
-    public void sendPayEvent(PayEvent payEvent) {
+    public void sendPayEvent(ProcessEvent processEvent) {
         try {
             // PayEvent 객체를 직렬화하여 Kafka 토픽에 전송
-            kafkaTemplate.send(TOPIC, payEvent);
-            log.info("Sent event: {}", payEvent);
+            kafkaTemplate.send(TOPIC, processEvent);
+            log.info("Sent event: {}", processEvent);
         } catch (Exception e) {
             log.error("Error sending event", e);
         }
