@@ -1,9 +1,10 @@
 package my.productservice.config;
 
-import my.productservice.kafka.event.OrderEvent;
 import my.productservice.kafka.event.PayEvent;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
@@ -27,52 +29,30 @@ public class KafkaConfig {
     private String bootstrapServers;
 
     @Bean
-    public ProducerFactory<String, OrderEvent> orderProducerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        return new DefaultKafkaProducerFactory<>(configProps);
-    }
-
-    @Bean
-    public KafkaTemplate<String, OrderEvent> orderKafkaTemplate() {
-        return new KafkaTemplate<>(orderProducerFactory());
-    }
-
-    @Bean
     public ProducerFactory<String, PayEvent> payProducerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+
+        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        configProps.put(ProducerConfig.BATCH_SIZE_CONFIG, 32768);
+        configProps.put(ProducerConfig.LINGER_MS_CONFIG, 20);
+        configProps.put(ProducerConfig.ACKS_CONFIG, "all");
+        configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
+        configProps.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 100);
+        configProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1);
+        configProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        configProps.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "product-tx-");
+
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
     @Bean
     public KafkaTemplate<String, PayEvent> payKafkaTemplate() {
-        return new KafkaTemplate<>(payProducerFactory());
-    }
-
-    @Bean
-    public ConsumerFactory<String, OrderEvent> orderConsumerFactory() {
-        JsonDeserializer<OrderEvent> deserializer = new JsonDeserializer<>(OrderEvent.class);
-        deserializer.addTrustedPackages("my.orderservice.kafka.event");
-
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "order-group");
-        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
-
-        return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(), deserializer);
-    }
-
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, OrderEvent> orderKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, OrderEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(orderConsumerFactory());
-        return factory;
+        KafkaTemplate<String, PayEvent> kafkaTemplate = new KafkaTemplate<>(payProducerFactory());
+        kafkaTemplate.setTransactionIdPrefix("product-tx-");
+        return kafkaTemplate;
     }
 
     @Bean
@@ -87,6 +67,10 @@ public class KafkaConfig {
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
 
+        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        configProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 500);
+
         return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(), deserializer);
     }
 
@@ -95,6 +79,33 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, PayEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(payConsumerFactory());
         return factory;
+    }
+
+    @Bean
+    public NewTopic payTopic() {
+        return TopicBuilder.name("pay-topic")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.COMPRESSION_TYPE_CONFIG, "snappy")
+                .build();
+    }
+
+    @Bean
+    public NewTopic processTopic() {
+        return TopicBuilder.name("process-topic")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.COMPRESSION_TYPE_CONFIG, "snappy")
+                .build();
+    }
+
+    @Bean
+    public NewTopic productTopic() {
+        return TopicBuilder.name("product-topic")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.COMPRESSION_TYPE_CONFIG, "snappy")
+                .build();
     }
 
 }

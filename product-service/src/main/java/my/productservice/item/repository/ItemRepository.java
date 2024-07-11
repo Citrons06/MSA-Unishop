@@ -1,5 +1,7 @@
 package my.productservice.item.repository;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
 import my.productservice.item.entity.Item;
 import org.springframework.data.domain.Page;
@@ -23,4 +25,9 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     @Query("SELECT i FROM Item i LEFT JOIN FETCH i.itemImgList LEFT JOIN i.category WHERE i.id = :id")
     Item findItemById(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Item i WHERE i.id = :id")
+    Item findItemByIdWithLock(@Param("id") Long id);
+
 }

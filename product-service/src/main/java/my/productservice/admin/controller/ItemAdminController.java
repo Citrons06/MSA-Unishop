@@ -23,7 +23,7 @@ import java.util.List;
 
 @Slf4j
 @Controller
-@RequestMapping("/product/admin/item")
+@RequestMapping("/product/admin")
 @RequiredArgsConstructor
 public class ItemAdminController {
 

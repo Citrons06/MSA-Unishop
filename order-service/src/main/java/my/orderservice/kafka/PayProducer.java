@@ -17,7 +17,6 @@ public class PayProducer {
 
     public void sendPayEvent(ProcessEvent processEvent) {
         try {
-            // PayEvent 객체를 직렬화하여 Kafka 토픽에 전송
             kafkaTemplate.send(TOPIC, processEvent);
             log.info("Sent event: {}", processEvent);
         } catch (Exception e) {

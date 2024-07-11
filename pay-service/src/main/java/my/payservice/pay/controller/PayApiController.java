@@ -3,8 +3,9 @@ package my.payservice.pay.controller;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.payservice.adapter.UserAdapter;
+import my.payservice.adapter.UserDto;
 import my.payservice.exception.CommonException;
-import my.payservice.exception.ErrorCode;
 import my.payservice.pay.dto.PayRequest;
 import my.payservice.pay.dto.ProcessRequest;
 import my.payservice.pay.service.PayService;
@@ -13,12 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -27,39 +24,31 @@ import java.util.Map;
 public class PayApiController {
 
     private final PayService payService;
+    private final UserAdapter userAdapter;
 
     @PostMapping("/enter")
-    @CircuitBreaker(name = "payServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
-    public ResponseEntity<?> enterPayment(@RequestBody PayRequest request, @RequestHeader("X-User-Name") String username) {
+    public ResponseEntity<?> enterPayment(@RequestBody PayRequest request) {
         try {
-            log.info("Enter payment request: {}", request);
-            request.setUsername(username);
-            payService.checkQuantity(request);
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-                    .body("{\"msg\" : \"결제 화면에 진입하였습니다.\"}");  // 결제 시작
-        } catch (CommonException e) {
-            log.error("Exception caught in controller: ", e);
-            if (e.getErrorCode() == ErrorCode.PAY_CANCEL) {
-                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"msg\" : \"결제 화면을 이탈하였습니다.\"}");  // 고객 변심 이탈
-            } else if (e.getErrorCode() == ErrorCode.NOT_ENOUGH_STOCK) {
-                return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"msg\" : \"결제 실패: 재고가 부족합니다.\"}");  // 재고 부족
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"msg\" : \"결제 실패: 알 수 없는 오류가 발생했습니다.\"}");
-            }
+            return payService.initiatePayment(request);
+        } catch (Exception e) {
+            log.error("결제 진입 오류: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"status\":500,\"message\":\"" + e.getMessage() + "\",\"data\":null}");
         }
     }
 
     @PostMapping("/process")
-    public ResponseEntity<?> processPayment(@RequestBody ProcessRequest request, @RequestHeader("X-User-Name") String username) {
+    @CircuitBreaker(name = "payServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
+    public ResponseEntity<?> processPayment(@RequestBody ProcessRequest request) {
         // PAY_START 상태의 결제가 없으면 에러 발생
         try {
-            payService.checkPayStatus(username);
-            request.setUsername(username);
-            payService.processPayment(request, username);
+            UserDto member = userAdapter.getMember(request.getUsername());
+            payService.checkPayStatus(member.getUsername());
+            request.setUsername(member.getUsername());
+            payService.processPayment(request, member.getUsername());
+
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-                    .body("{\"msg\" : \"결제를 완료하였습니다.\"}");  // 결제 성공
+                    .body("{\"msg\" : \"결제를 완료하였습니다.\"}");
         } catch (CommonException e) {
             log.error("Exception caught in controller: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
@@ -67,15 +56,9 @@ public class PayApiController {
         }
     }
 
-    public ResponseEntity<?> fallbackMethod(PayRequest payRequest, String username, Throwable throwable) {
-        String errorMessage = "Pay service is currently unavailable. Please try again later.";
-        log.error("Fallback method invoked due to: ", throwable);
-
-        // 기본 응답 생성
-        Map<String, Object> fallbackResponse = new HashMap<>();
-        fallbackResponse.put("error", errorMessage);
-        fallbackResponse.put("details", payRequest);
-
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(fallbackResponse);
+    public ResponseEntity<?> fallbackMethod(ProcessRequest request, Throwable t) {
+        log.error("Fallback method triggered: ", t);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body("{\"msg\" : \"결제 서비스가 현재 이용 불가능합니다. 나중에 다시 시도해 주세요.\"}");
     }
 }

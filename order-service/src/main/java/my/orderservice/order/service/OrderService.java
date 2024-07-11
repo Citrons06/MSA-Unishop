@@ -6,6 +6,7 @@ import my.orderservice.adapter.ProductAdapter;
 import my.orderservice.adapter.ProductDto;
 import my.orderservice.exception.CommonException;
 import my.orderservice.exception.ErrorCode;
+import my.orderservice.order.dto.CreateOrderResponse;
 import my.orderservice.order.dto.OrderRequestDto;
 import my.orderservice.order.dto.OrderResponseDto;
 import my.orderservice.order.entity.Order;
@@ -51,7 +52,7 @@ public class OrderService {
         order.cancel();
 
         // 재고 증가
-        adjustStockQuantity(order.getOrderItems(), 1);
+        adjustStockQuantity(order.getOrderItems(), 1, order.getOrderUsername());
 
         orderRepository.save(order);
 
@@ -73,7 +74,7 @@ public class OrderService {
         List<Order> orders = orderRepository.findByOrderStatusAndReturnRequestDateBefore(OrderStatus.RETURN_REQUESTED, LocalDateTime.now().minusDays(RETURN_REQUEST_PERIOD_DAYS));
         orders.forEach(order -> {
             order.completeReturn();
-            adjustStockQuantity(order.getOrderItems(), 1);
+            adjustStockQuantity(order.getOrderItems(), 1, order.getOrderUsername());
             orderRepository.save(order);
 
             log.info("반품된 상품의 재고가 회복됩니다.: {}", order.getOrderItems().stream().map(OrderItem::getItemId).collect(Collectors.toList()));
@@ -118,6 +119,11 @@ public class OrderService {
         return convertToOrderResponseDto(order);
     }
 
+    public CreateOrderResponse findOneOrder(Long orderId) {
+        Order order = getOrderByIdOrThrow(orderId);
+        return new CreateOrderResponse(order);
+    }
+
     private Order getOrderByIdOrThrow(Long orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new CommonException(ErrorCode.ORDER_NOT_FOUND));
@@ -144,7 +150,7 @@ public class OrderService {
         }
     }
 
-    private void adjustStockQuantity(List<OrderItem> orderItems, int multiplier) {
+    private void adjustStockQuantity(List<OrderItem> orderItems, int multiplier, String username) {
         for (OrderItem orderItem : orderItems) {
             log.info("재고 조정: {}, {}", orderItem.getItemId(), multiplier * orderItem.getCount());
             productAdapter.updateQuantity(orderItem.getItemId(), multiplier * orderItem.getCount());

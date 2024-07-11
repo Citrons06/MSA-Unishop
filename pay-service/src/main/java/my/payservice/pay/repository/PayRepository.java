@@ -8,5 +8,4 @@ import java.util.Optional;
 
 public interface PayRepository extends JpaRepository<Pay, Long> {
     Optional<Pay> findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(String username, PayStatus payStatus);
-
 }

@@ -47,3 +47,4 @@ gradle
 docker-compose.yml
 kafka-data
 redis-data
+http-request-tool

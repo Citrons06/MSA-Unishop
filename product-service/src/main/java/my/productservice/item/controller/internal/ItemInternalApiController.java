@@ -40,10 +40,11 @@ public class ItemInternalApiController {
 
     @PutMapping("/api/product/internal/update-quantity")
     @CircuitBreaker(name = "ItemServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
-    public ResponseEntity<?> updateQuantity(@RequestParam("itemId") Long itemId, @RequestParam("quantity") int quantity) {
+    public ResponseEntity<?> updateQuantity(@RequestParam("itemId") Long itemId, @RequestParam("quantity") int quantity
+                                            ) {
         try {
-            ItemResponseDto item = itemWriteService.updateQuantityAndSellCount(itemId, quantity);
-            return ResponseEntity.ok(new ItemInternalResponse(item));
+            itemWriteService.updateQuantityAndSellCount(itemId, quantity);
+            return ResponseEntity.ok().body("{\"msg\" : \"재고가 업데이트 되었습니다.\"}");
         } catch (IllegalArgumentException e) {
             log.error("Error updating quantity for item with ID: {}", itemId, e);
             throw new CommonException(ErrorCode.UPDATE_FAILED);

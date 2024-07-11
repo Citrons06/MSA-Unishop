@@ -1,4 +1,4 @@
-package my.orderservice.adapter;
+package my.payservice.adapter;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,5 +8,5 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface UserAdapter {
 
     @GetMapping("/api/user/internal/test/{username}")
-    UserDto getUserByUsername(@PathVariable("username") String username);
+    UserDto getMember(@PathVariable("username") String username);
 }

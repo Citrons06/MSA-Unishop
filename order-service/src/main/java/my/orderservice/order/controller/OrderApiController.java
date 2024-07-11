@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.orderservice.exception.CommonException;
 import my.orderservice.exception.ErrorCode;
+import my.orderservice.order.dto.CreateOrderResponse;
 import my.orderservice.order.dto.OrderRequestDto;
 import my.orderservice.order.dto.OrderResponseDto;
 import my.orderservice.order.service.OrderService;
@@ -38,16 +39,8 @@ public class OrderApiController {
     // 주문 단건 상세 조회
     @GetMapping("/{orderId}")
     public ResponseEntity<?> orderDetail(@PathVariable("orderId") Long orderId) {
-        OrderResponseDto order = orderService.getOrderById(orderId);
-        return ResponseEntity.ok(order);
-    }
-
-    @PostMapping
-    @CircuitBreaker(name = "orderServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
-    public ResponseEntity<?> createOrder(HttpServletRequest request, @RequestBody OrderRequestDto orderRequestDto) {
-        String username = request.getHeader("X-User-Name");
-        OrderRequestDto order = orderService.order(username, orderRequestDto);
-        return ResponseEntity.ok(order);
+        CreateOrderResponse oneOrder = orderService.findOneOrder(orderId);
+        return ResponseEntity.ok(oneOrder);
     }
 
     // 주문 취소
@@ -70,17 +63,5 @@ public class OrderApiController {
         } catch (Exception e) {
             throw new CommonException(ErrorCode.RETURN_FAILED);
         }
-    }
-
-    public ResponseEntity<?> fallbackMethod(HttpServletRequest request, OrderRequestDto orderRequestDto, Throwable throwable) {
-        String errorMessage = "Order service is currently unavailable. Please try again later.";
-        log.error("Fallback method invoked due to: ", throwable);
-
-        // 기본 응답 생성
-        Map<String, Object> fallbackResponse = new HashMap<>();
-        fallbackResponse.put("error", errorMessage);
-        fallbackResponse.put("details", orderRequestDto);
-
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(fallbackResponse);
     }
 }

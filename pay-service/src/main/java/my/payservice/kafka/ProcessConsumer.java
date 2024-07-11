@@ -5,7 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import my.payservice.kafka.event.ProcessEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Service
@@ -15,26 +21,75 @@ public class ProcessConsumer {
     private static final String PROCESS_TOPIC = "process-topic";
     private static final String PROCESS_GROUP_ID = "process-group";
 
-    private final PayProducer payProducer;
+    private final ProcessProducer processProducer;
+    private final ConcurrentHashMap<String, AtomicLong> lastProcessedSequence = new ConcurrentHashMap<>();
+    private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
-    @KafkaListener(topics = PROCESS_TOPIC, groupId = PROCESS_GROUP_ID, containerFactory = "processEventKafkaListenerContainerFactory")
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @KafkaListener(topics = PROCESS_TOPIC, groupId = PROCESS_GROUP_ID, containerFactory = "processEventKafkaListenerContainerFactory", concurrency = "3")
     public void consume(ProcessEvent processEvent) {
         log.info("Consumed ProcessEvent: {}", processEvent);
 
+        if (processedEventIds.contains(processEvent.getEventId())) {
+            log.warn("Skipping already processed event: {}", processEvent.getEventId());
+            return;
+        }
+
+        if (!isValidSequence(processEvent)) {
+            log.warn("Invalid sequence for event: {}", processEvent);
+            return;
+        }
+
         try {
-            if (processEvent.getStatus().equals("PAY_COMPLETE")) {
-                processPayComplete(processEvent);
-            } else {
-                log.error("Invalid event status: {}", processEvent.getStatus());
-            }
+            processEventByStatus(processEvent);
+            processedEventIds.add(processEvent.getEventId());
+            updateLastProcessedSequence(processEvent);
         } catch (Exception e) {
             log.error("Failed to process ProcessEvent", e);
+            handleProcessingError(processEvent);
         }
     }
 
-    @Transactional
+    private boolean isValidSequence(ProcessEvent processEvent) {
+        String key = processEvent.getUsername();
+        long currentSequence = processEvent.getSequenceNumber();
+
+        AtomicLong lastSequence = lastProcessedSequence.computeIfAbsent(key, k -> new AtomicLong(0));
+
+        return currentSequence > lastSequence.get();
+    }
+
+    private void processEventByStatus(ProcessEvent processEvent) {
+        switch (processEvent.getStatus()) {
+            case "PAY_COMPLETE" -> processPayComplete(processEvent);
+            default -> handleInvalidStatus(processEvent);
+        }
+    }
+
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void processPayComplete(ProcessEvent processEvent) {
-        ProcessEvent orderCreateEvent = new ProcessEvent("ORDER_CREATE", processEvent.getUsername(), processEvent.getOrderUsername(), processEvent.getItemId(), processEvent.getQuantity(), processEvent.getAmount(), processEvent.getOrderAddress(), processEvent.getOrderTel());
-        payProducer.sendProcessEvent(orderCreateEvent);
+        log.info("ORDER_CREATE 이벤트를 전송합니다. {}", processEvent);
+        ProcessEvent orderCreateEvent = createOrderCreateEvent(processEvent);
+        orderCreateEvent.setEventId(UUID.randomUUID().toString());
+        processProducer.sendProcessEvent(orderCreateEvent);
+    }
+
+    private ProcessEvent createOrderCreateEvent(ProcessEvent processEvent) {
+        return new ProcessEvent("ORDER_CREATE", processEvent.getUsername(), processEvent.getOrderUsername(),
+                processEvent.getItemId(), processEvent.getQuantity(), processEvent.getAmount(),
+                processEvent.getOrderAddress(), processEvent.getOrderTel());
+    }
+
+    private void updateLastProcessedSequence(ProcessEvent processEvent) {
+        String key = processEvent.getUsername();
+        lastProcessedSequence.get(key).set(processEvent.getSequenceNumber());
+    }
+
+    private void handleInvalidStatus(ProcessEvent processEvent) {
+        log.error("Invalid event status: {}", processEvent.getStatus());
+    }
+
+    private void handleProcessingError(ProcessEvent processEvent) {
+        log.error("Error processing event: {}", processEvent);
     }
 }

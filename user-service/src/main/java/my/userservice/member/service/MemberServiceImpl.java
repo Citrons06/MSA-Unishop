@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.userservice.adapter.OrderAdapter;
 import my.userservice.adapter.OrderDto;
+import my.userservice.exception.CommonException;
+import my.userservice.exception.ErrorCode;
 import my.userservice.member.dto.MemberRequestDto;
 import my.userservice.member.dto.MemberResponseDto;
 import my.userservice.member.entity.Member;
@@ -105,6 +107,9 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public MemberResponseDto getMember(String username) {
         Member member = memberRepository.findByUsername(username);
+        if (member == null) {
+            throw new CommonException(ErrorCode.MEMBER_NOT_FOUND);
+        }
         return new MemberResponseDto(member);
     }
 
