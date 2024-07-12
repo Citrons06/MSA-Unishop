@@ -20,13 +20,11 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 @RequiredArgsConstructor
 public class OrderConsumer {
-
     private static final String ORDER_TOPIC = "process-topic";
     private static final String ORDER_GROUP_ID = "order-group";
 
     private final OrderRepository orderRepository;
     private final UserAdapter userAdapter;
-
     private final ConcurrentHashMap<String, AtomicLong> lastProcessedSequence = new ConcurrentHashMap<>();
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
@@ -35,19 +33,12 @@ public class OrderConsumer {
     public void consume(ProcessEvent processEvent) {
         log.info("Consumed event: {}", processEvent);
 
-        if (processedEventIds.contains(processEvent.getEventId())) {
-            log.warn("Skipping already processed event: {}", processEvent.getEventId());
-            return;
-        }
-
-        if (!isValidSequence(processEvent)) {
-            log.warn("Invalid sequence for event: {}", processEvent);
+        if (processedEventIds.contains(processEvent.getEventId()) || !isValidSequence(processEvent)) {
             return;
         }
 
         try {
             if (processEvent.getStatus().equals("ORDER_CREATE")) {
-                log.info("ORDER_CREATE 이벤트를 처리합니다.");
                 createOrder(processEvent);
             } else {
                 log.error("Invalid event status: {}", processEvent.getStatus());
@@ -63,9 +54,7 @@ public class OrderConsumer {
     private boolean isValidSequence(ProcessEvent processEvent) {
         String key = processEvent.getUsername();
         long currentSequence = processEvent.getSequenceNumber();
-
         AtomicLong lastSequence = lastProcessedSequence.computeIfAbsent(key, k -> new AtomicLong(0));
-
         return currentSequence > lastSequence.get();
     }
 

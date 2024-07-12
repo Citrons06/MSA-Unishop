@@ -33,22 +33,25 @@ public class ItemWriteService {
                 return false;
             }
 
-            updateItemSellCount(item, quantity);
-            itemRepository.save(item);
-
             log.info("{} 상품의 재고가 업데이트 되었습니다. [변경량: {}개]", item.getItemName(), quantity);
             return true;
         } catch (CommonException e) {
-            log.error("상품 재고 및 판매 수량 업데이트 실패: {}", e.getMessage());
             return false;
         }
     }
 
-    private void updateItemSellCount(Item item, int quantity) {
-        if (quantity < 0) {
-            item.updateItemSellCount(Math.abs(quantity));
-        } else {
-            item.updateItemSellCount(-Math.abs(quantity));
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    public boolean syncItemSellCount(Long itemId, int quantity) {
+        try {
+            Item item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
+            item.updateItemSellCount(quantity);
+            itemRepository.save(item);
+            log.info("상품 판매량 동기화 완료: 상품 ID {}, 수량 {}", itemId, quantity);
+            return true;
+        } catch (Exception e) {
+            log.error("상품 판매량 동기화 실패: 상품 ID {}, 수량 {}", itemId, quantity, e);
+            return false;
         }
     }
 }

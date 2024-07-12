@@ -2,6 +2,8 @@ package my.productservice.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.productservice.inventory.service.InventoryService;
+import my.productservice.item.service.ItemReadService;
 import my.productservice.item.service.ItemWriteService;
 import my.productservice.kafka.event.PayEvent;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -68,7 +70,7 @@ public class ProductConsumer {
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public PayEvent processEvent(PayEvent payEvent) {
         return switch (payEvent.getStatus()) {
-            case "STOCK_DEDUCT" -> handleStockDeduct(payEvent);
+            case "STOCK_DEDUCTED" -> handleStockDeducted(payEvent);
             case "STOCK_RECOVER" -> handleStockRecover(payEvent);
             default -> {
                 log.error("Invalid event status: {}", payEvent.getStatus());
@@ -77,19 +79,13 @@ public class ProductConsumer {
         };
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public PayEvent handleStockDeduct(PayEvent payEvent) {
-        try {
-            boolean success = itemWriteService.updateQuantityAndSellCount(payEvent.getItemId(), -payEvent.getQuantity());
-            String status = success ? "STOCK_DEDUCT_SUCCESS" : "STOCK_DEDUCT_FAILED";
-            log.info("{}: 사용자 {}, 상품 ID {}, 수량 {}", status, payEvent.getUsername(), payEvent.getItemId(), payEvent.getQuantity());
-            return new PayEvent(status, payEvent.getUsername(), payEvent.getItemId(),
-                    payEvent.getQuantity(), payEvent.getAmount(), 0);
-        } catch (Exception e) {
-            log.error("Error in handleStockDeduct: ", e);
-            return new PayEvent("STOCK_DEDUCT_FAILED", payEvent.getUsername(), payEvent.getItemId(),
-                    payEvent.getQuantity(), payEvent.getAmount(), 0);
-        }
+    private PayEvent handleStockDeducted(PayEvent payEvent) {
+        // 실제 판매량 반영
+        boolean success = itemWriteService.syncItemSellCount(payEvent.getItemId(), payEvent.getQuantity());
+        String status = success ? "STOCK_DEDUCT_SYNCED" : "STOCK_DEDUCT_SYNC_FAILED";
+        log.info("{}: 사용자 {}, 상품 ID {}, 수량 {}", status, payEvent.getUsername(), payEvent.getItemId(), payEvent.getQuantity());
+        return new PayEvent(status, payEvent.getUsername(), payEvent.getItemId(),
+                payEvent.getQuantity(), payEvent.getAmount(), 0);
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)

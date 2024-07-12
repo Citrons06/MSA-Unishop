@@ -17,8 +17,6 @@ import my.payservice.pay.entity.PayStatus;
 import my.payservice.kafka.event.PayEvent;
 import my.payservice.pay.repository.PayRepository;
 import my.payservice.redisson.OrderProcessingService;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RedissonClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,30 +37,20 @@ public class PayService {
     private final ProductProducer productProducer;
     private final RetryRegistry retryRegistry;
     private final OrderProcessingService orderProcessingService;
-    private final RedissonClient redissonClient;
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     @DistributedLock(key = "'stock:' + #payRequest.itemId", waitTime = 5, leaseTime = 10)
     public ResponseEntity<?> initiatePayment(PayRequest payRequest) {
         try {
-            // Redis 에서 재고 확인
-            String stockKey = "stock:" + payRequest.getItemId();
-            RAtomicLong stock = redissonClient.getAtomicLong(stockKey);
-            log.info("stockKey: {}, 재고: {}", stockKey, stock.get());
-
-            if (stock.get() <= 0) {
-                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"msg\" : \"재고가 부족합니다.\"}");
-            }
+            // 결제 정보 임시 저장
+            Pay pay = createInitialPay(payRequest, PayStatus.STOCK_CHECKING);
+            payRepository.save(pay);
 
             // 주문 큐에 추가
             orderProcessingService.enqueueOrder(payRequest);
 
-            Pay pay = createInitialPay(payRequest);
-            payRepository.save(pay);
-
-            log.info("결제 진입 요청 및 재고 확인 완료: 사용자 {}, 상품 ID {}", payRequest.getUsername(), payRequest.getItemId());
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
+            log.info("결제 진입 요청 및 재고 확인 요청: 사용자 {}, 상품 ID {}", payRequest.getUsername(), payRequest.getItemId());
+            return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON)
                     .body("{\"msg\" : \"결제 진입 요청이 접수되었습니다. 재고 확인 중입니다.\"}");
         } catch (Exception e) {
             log.error("결제 진입 실패", e);
@@ -71,22 +59,18 @@ public class PayService {
         }
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    @DistributedLock(key = "#username", waitTime = 5, leaseTime = 10)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void processPayment(ProcessRequest processRequest, String username) {
         Retry retry = retryRegistry.retry("processPayment");
         retry.executeRunnable(() -> {
             try {
-                // 결제 정보 조회
                 Pay pay = findPayByUsernameAndStatus(username, PayStatus.STOCK_DEDUCTED);
 
-                // 결제 실패 시나리오
-                if (shouldSimulatePaymentFailure()) {
+                if (Math.random() <= 0.2) {
                     handlePaymentFailure(processRequest, username);
                 } else {
                     handlePaymentSuccess(pay, processRequest);
                 }
-
             } catch (CommonException e) {
                 handleStockShortage(e, processRequest, username);
             } catch (Exception e) {
@@ -95,14 +79,11 @@ public class PayService {
         });
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    @DistributedLock(key = "#payEvent.username", waitTime = 5, leaseTime = 10)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updatePaymentStatus(PayEvent payEvent) {
         Retry retry = retryRegistry.retry("updatePaymentStatus");
-
         retry.executeRunnable(() -> {
             Pay pay = findPayByUsernameAndStatus(payEvent.getUsername(), PayStatus.STOCK_DEDUCTED);
-
             PayStatus newStatus = determineNewPaymentStatus(payEvent, pay);
 
             if (newStatus != pay.getPayStatus()) {
@@ -113,31 +94,12 @@ public class PayService {
         });
     }
 
-    private PayEvent createStockDeductEvent(PayRequest payRequest) {
-        return new PayEvent("STOCK_DEDUCT", payRequest.getUsername(),
-                payRequest.getItemId(), payRequest.getQuantity(), payRequest.getAmount(), 0);
-    }
-
-    private Pay createInitialPay(PayRequest payRequest) {
+    private Pay createInitialPay(PayRequest payRequest, PayStatus status) {
         return Pay.builder()
                 .amount(payRequest.getAmount())
-                .payStatus(PayStatus.PAY_START)
+                .payStatus(status)
                 .username(payRequest.getUsername())
                 .build();
-    }
-
-    private ResponseEntity<?> createPendingResponse() {
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-                .body("{\"msg\" : \"결제 진입 요청이 접수되었습니다. 재고 확인 중입니다.\"}");
-    }
-
-    private ResponseEntity<?> createErrorResponse() {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
-                .body("{\"msg\" : \"결제 진입에 실패하였습니다.\"}");
-    }
-
-    private boolean shouldSimulatePaymentFailure() {
-        return Math.random() <= 0.2;
     }
 
     private void handlePaymentFailure(ProcessRequest processRequest, String username) {
@@ -179,14 +141,8 @@ public class PayService {
         payRepository.save(pay);
         log.info("결제 상태 업데이트: 사용자: {}, 상품ID: {}, 새 상태: {}", pay.getUsername(), payEvent.getItemId(), newStatus);
 
-        switch (payEvent.getStatus()) {
-            case "PAY_FAILED":
-                handlePaymentCancelOrFailure(payEvent);
-                break;
-            case "PAY_COMPLETE":
-                pay.setPayStatus(newStatus);
-                payRepository.save(pay);
-                break;
+        if (newStatus == PayStatus.PAY_FAILED) {
+            handlePaymentCancelOrFailure(payEvent);
         }
     }
 
@@ -195,7 +151,7 @@ public class PayService {
                 payEvent.getItemId(), payEvent.getQuantity(),
                 payEvent.getAmount(), payEvent.getItemQuantity());
         productProducer.sendProductEvent(recoverEvent);
-        log.info("결제 취소 또는 실패로 인한 재고 회복 요청: 사용자: {}, 상품ID: {}", payEvent.getUsername(), payEvent.getItemId());
+        log.info("결제 취소로 인한 재고 회복 요청: 사용자: {}, 상품ID: {}", payEvent.getUsername(), payEvent.getItemId());
     }
 
     private void handlePaymentSuccess(Pay pay, ProcessRequest processRequest) {

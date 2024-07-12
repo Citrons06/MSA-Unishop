@@ -6,6 +6,8 @@ import my.productservice.aop.DistributedLock;
 import my.productservice.exception.CommonException;
 import my.productservice.exception.ErrorCode;
 import my.productservice.inventory.dto.InventoryResponseDto;
+import my.productservice.item.entity.Item;
+import my.productservice.item.repository.ItemRepository;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 public class InventoryService {
 
     private final RedisTemplate<String, Integer> redisTemplate;
+    private final ItemRepository itemRepository;
     private static final String INVENTORY_KEY_PREFIX = "stock:";
 
     private final RedisScript<Boolean> updateInventoryScript = RedisScript.of(
@@ -46,7 +49,13 @@ public class InventoryService {
                 Collections.singletonList(key),
                 String.valueOf(quantityChange));
         if (Boolean.TRUE.equals(result)) {
-            log.info("재고 업데이트 성공: 상품 ID {}, 변경량 {}", itemId, quantityChange);
+            // Redis 재고 업데이트 성공 시 itemSellCount도 업데이트
+            Item item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
+            item.updateItemSellCount(-quantityChange);
+            itemRepository.save(item);
+
+            log.info("재고 및 판매량 업데이트 성공: 상품 ID {}, 변경량 {}", itemId, quantityChange);
             return true;
         } else {
             log.warn("재고 업데이트 실패: 상품 ID {}, 변경량 {}", itemId, quantityChange);
@@ -122,5 +131,9 @@ public class InventoryService {
                         id -> id,
                         id -> values.get(itemIds.indexOf(id))
                 ));
+    }
+
+    public boolean checkStock(Long itemId, int quantity) {
+        return getStock(itemId) >= quantity;
     }
 }

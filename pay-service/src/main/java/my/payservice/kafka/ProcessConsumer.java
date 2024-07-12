@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import my.payservice.kafka.event.ProcessEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
@@ -25,18 +24,11 @@ public class ProcessConsumer {
     private final ConcurrentHashMap<String, AtomicLong> lastProcessedSequence = new ConcurrentHashMap<>();
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
     @KafkaListener(topics = PROCESS_TOPIC, groupId = PROCESS_GROUP_ID, containerFactory = "processEventKafkaListenerContainerFactory", concurrency = "3")
     public void consume(ProcessEvent processEvent) {
         log.info("Consumed ProcessEvent: {}", processEvent);
 
-        if (processedEventIds.contains(processEvent.getEventId())) {
-            log.warn("Skipping already processed event: {}", processEvent.getEventId());
-            return;
-        }
-
-        if (!isValidSequence(processEvent)) {
-            log.warn("Invalid sequence for event: {}", processEvent);
+        if (processedEventIds.contains(processEvent.getEventId()) || !isValidSequence(processEvent)) {
             return;
         }
 
@@ -53,9 +45,7 @@ public class ProcessConsumer {
     private boolean isValidSequence(ProcessEvent processEvent) {
         String key = processEvent.getUsername();
         long currentSequence = processEvent.getSequenceNumber();
-
         AtomicLong lastSequence = lastProcessedSequence.computeIfAbsent(key, k -> new AtomicLong(0));
-
         return currentSequence > lastSequence.get();
     }
 
@@ -66,7 +56,7 @@ public class ProcessConsumer {
         }
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public void processPayComplete(ProcessEvent processEvent) {
         log.info("ORDER_CREATE 이벤트를 전송합니다. {}", processEvent);
         ProcessEvent orderCreateEvent = createOrderCreateEvent(processEvent);
