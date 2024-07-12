@@ -13,6 +13,8 @@ import my.payservice.pay.repository.PayRepository;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RQueue;
 import org.redisson.api.RedissonClient;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -69,6 +72,7 @@ public class OrderProcessingService {
     }
 
     @Transactional
+    @CachePut(value = "PayStatus", key = "#payRequest.username")
     public void processOrder(PayRequest payRequest) {
         Pay pay = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(payRequest.getUsername(), PayStatus.STOCK_CHECKING)
                 .orElseThrow(() -> new CommonException(ErrorCode.PAY_NOT_FOUND));
@@ -95,6 +99,13 @@ public class OrderProcessingService {
         }
 
         log.info("주문 처리 완료: 사용자 {}, 상품 ID {}", payRequest.getUsername(), payRequest.getItemId());
+    }
+
+    @Cacheable(value = "payStatus", key = "#username")
+    @Transactional(readOnly = true)
+    public PayStatus getPayStatus(String username) {
+        Optional<Pay> payOpt = payRepository.findFirstByUsernameOrderByCreatedDateDesc(username);
+        return payOpt.map(Pay::getPayStatus).orElse(null);
     }
 
     private void handleInsufficientStock(Pay pay, PayRequest payRequest) {

@@ -7,6 +7,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,21 +25,23 @@ public class ProcessConsumer {
     private final ConcurrentHashMap<String, AtomicLong> lastProcessedSequence = new ConcurrentHashMap<>();
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
-    @KafkaListener(topics = PROCESS_TOPIC, groupId = PROCESS_GROUP_ID, containerFactory = "processEventKafkaListenerContainerFactory", concurrency = "3")
-    public void consume(ProcessEvent processEvent) {
-        log.info("Consumed ProcessEvent: {}", processEvent);
+    @KafkaListener(topics = PROCESS_TOPIC, groupId = PROCESS_GROUP_ID, containerFactory = "processEventKafkaListenerContainerFactory", concurrency = "3", batch = "true")
+    public void consume(List<ProcessEvent> processEvents) {
+        log.info("Consumed {} ProcessEvents", processEvents.size());
 
-        if (processedEventIds.contains(processEvent.getEventId()) || !isValidSequence(processEvent)) {
-            return;
-        }
+        for (ProcessEvent processEvent : processEvents) {
+            if (processedEventIds.contains(processEvent.getEventId()) || !isValidSequence(processEvent)) {
+                continue;
+            }
 
-        try {
-            processEventByStatus(processEvent);
-            processedEventIds.add(processEvent.getEventId());
-            updateLastProcessedSequence(processEvent);
-        } catch (Exception e) {
-            log.error("Failed to process ProcessEvent", e);
-            handleProcessingError(processEvent);
+            try {
+                processEventByStatus(processEvent);
+                processedEventIds.add(processEvent.getEventId());
+                updateLastProcessedSequence(processEvent);
+            } catch (Exception e) {
+                log.error("Failed to process ProcessEvent", e);
+                handleProcessingError(processEvent);
+            }
         }
     }
 

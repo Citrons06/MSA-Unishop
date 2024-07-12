@@ -17,6 +17,9 @@ import my.payservice.pay.entity.PayStatus;
 import my.payservice.kafka.event.PayEvent;
 import my.payservice.pay.repository.PayRepository;
 import my.payservice.redisson.OrderProcessingService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +43,7 @@ public class PayService {
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     @DistributedLock(key = "'stock:' + #payRequest.itemId", waitTime = 5, leaseTime = 10)
+    @CachePut(value = "payStatus", key = "#payRequest.username")
     public ResponseEntity<?> initiatePayment(PayRequest payRequest) {
         try {
             // 결제 정보 임시 저장
@@ -59,39 +63,82 @@ public class PayService {
         }
     }
 
+    @DistributedLock(key = "'payment:' + #username", waitTime = 5, leaseTime = 10)
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void processPayment(ProcessRequest processRequest, String username) {
+    @CachePut(value = "payStatus", key = "#username")
+    public PayStatus processPayment(ProcessRequest processRequest, String username) {
         Retry retry = retryRegistry.retry("processPayment");
-        retry.executeRunnable(() -> {
+        return retry.executeSupplier(() -> {
             try {
                 Pay pay = findPayByUsernameAndStatus(username, PayStatus.STOCK_DEDUCTED);
+                if (pay == null) {
+                    throw new CommonException(ErrorCode.INVALID_PAY_STATUS);
+                }
 
                 if (Math.random() <= 0.2) {
-                    handlePaymentFailure(processRequest, username);
+                    return handlePaymentFailure(processRequest, username);
                 } else {
-                    handlePaymentSuccess(pay, processRequest);
+                    return handlePaymentSuccess(pay, processRequest);
                 }
             } catch (CommonException e) {
-                handleStockShortage(e, processRequest, username);
+                if (e.getErrorCode() == ErrorCode.NOT_ENOUGH_STOCK) {
+                    return handleStockShortage(e, processRequest, username);
+                } else {
+                    throw e;
+                }
             } catch (Exception e) {
-                handleGeneralError(e, processRequest, username);
+                return handleGeneralError(e, processRequest, username);
             }
         });
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void updatePaymentStatus(PayEvent payEvent) {
-        Retry retry = retryRegistry.retry("updatePaymentStatus");
-        retry.executeRunnable(() -> {
-            Pay pay = findPayByUsernameAndStatus(payEvent.getUsername(), PayStatus.STOCK_DEDUCTED);
-            PayStatus newStatus = determineNewPaymentStatus(payEvent, pay);
+    @Cacheable(value = "payStatus", key = "#username")
+    @Transactional(readOnly = true)
+    public PayStatus getPayStatus(String username) {
+        Optional<Pay> payOpt = payRepository.findFirstByUsernameOrderByCreatedDateDesc(username);
+        return payOpt.map(Pay::getPayStatus).orElse(null);
+    }
 
-            if (newStatus != pay.getPayStatus()) {
-                updatePayStatus(pay, newStatus, payEvent);
-            } else {
-                log.info("결제 상태 변경 없음: 사용자: {}, 상품ID: {}, 상태: {}", pay.getUsername(), payEvent.getItemId(), newStatus);
+    @CachePut(value = "payStatus", key = "#payEvent.username")
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public PayStatus updatePaymentStatus(PayEvent payEvent) {
+        Retry retry = retryRegistry.retry("updatePaymentStatus");
+        return retry.executeSupplier(() -> {
+            PayStatus newStatus = determineNewPaymentStatus(payEvent);
+
+            if (newStatus != null) {
+                int updatedRows = payRepository.updatePayStatus(payEvent.getUsername(), PayStatus.STOCK_DEDUCTED, newStatus);
+
+                if (updatedRows > 0) {
+                    log.info("결제 상태 업데이트: 사용자: {}, 상품ID: {}, 새 상태: {}", payEvent.getUsername(), payEvent.getItemId(), newStatus);
+                    if (newStatus == PayStatus.PAY_FAILED) {
+                        handlePaymentCancelOrFailure(payEvent);
+                    }
+                    return newStatus;
+                } else {
+                    log.warn("결제 상태 업데이트 실패: 사용자: {}, 상품ID: {}", payEvent.getUsername(), payEvent.getItemId());
+                }
             }
+            return null;
         });
+    }
+
+    @CacheEvict(value = "payStatus", key = "#username")
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void checkPayStatus(String username) {
+        Optional<Pay> findPayOpt = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(username, PayStatus.STOCK_DEDUCTED);
+        if (findPayOpt.isEmpty()) {
+            log.warn("잘못된 결제 상태: 사용자: {}", username);
+            throw new CommonException(ErrorCode.INVALID_PAY_STATUS);
+        }
+    }
+
+    private PayStatus determineNewPaymentStatus(PayEvent payEvent) {
+        return switch (payEvent.getStatus()) {
+            case "PAY_FAILED" -> PayStatus.PAY_FAILED;
+            case "PAY_COMPLETE" -> PayStatus.PAY_COMPLETE;
+            default -> null;
+        };
     }
 
     private Pay createInitialPay(PayRequest payRequest, PayStatus status) {
@@ -102,48 +149,31 @@ public class PayService {
                 .build();
     }
 
-    private void handlePaymentFailure(ProcessRequest processRequest, String username) {
+    private PayStatus handlePaymentFailure(ProcessRequest processRequest, String username) {
         updatePaymentStatus(new PayEvent("PAY_FAILED", username,
                 processRequest.getItemId(), processRequest.getQuantity(),
                 processRequest.getAmount(), 0));
         log.info("고객 귀책으로 결제 실패: {} {}", username, processRequest.getItemId());
+
+        return PayStatus.PAY_FAILED;
     }
 
-    private void handleStockShortage(CommonException e, ProcessRequest processRequest, String username) {
+    private PayStatus handleStockShortage(CommonException e, ProcessRequest processRequest, String username) {
         log.error("재고 부족: {}", e.getMessage());
         updatePaymentStatus(new PayEvent("PAY_FAILED", username, processRequest.getItemId(),
                 processRequest.getQuantity(), processRequest.getAmount(), 0));
-        throw new CommonException(ErrorCode.NOT_ENOUGH_STOCK);
+
+        return PayStatus.PAY_FAILED;
     }
 
-    private void handleGeneralError(Exception e, ProcessRequest processRequest, String username) {
+    private PayStatus handleGeneralError(Exception e, ProcessRequest processRequest, String username) {
         log.error("결제 처리 중 오류 발생: {}", e.getMessage());
         updatePaymentStatus(new PayEvent("PAY_FAILED", username, processRequest.getItemId(),
                 processRequest.getQuantity(), processRequest.getAmount(), 0));
         productProducer.sendProductEvent(new PayEvent("STOCK_RECOVER", username,
                 processRequest.getItemId(), processRequest.getQuantity(), processRequest.getAmount(), 0));
-        throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
-    }
 
-    private PayStatus determineNewPaymentStatus(PayEvent payEvent, Pay pay) {
-        return switch (payEvent.getStatus()) {
-            case "PAY_FAILED" -> PayStatus.PAY_FAILED;
-            case "PAY_COMPLETE" -> PayStatus.PAY_COMPLETE;
-            default -> {
-                log.warn("잘못된 결제 상태: {}", payEvent.getStatus());
-                yield pay.getPayStatus(); // 현재 상태를 유지
-            }
-        };
-    }
-
-    private void updatePayStatus(Pay pay, PayStatus newStatus, PayEvent payEvent) {
-        pay.setPayStatus(newStatus);
-        payRepository.save(pay);
-        log.info("결제 상태 업데이트: 사용자: {}, 상품ID: {}, 새 상태: {}", pay.getUsername(), payEvent.getItemId(), newStatus);
-
-        if (newStatus == PayStatus.PAY_FAILED) {
-            handlePaymentCancelOrFailure(payEvent);
-        }
+        return PayStatus.PAY_FAILED;
     }
 
     private void handlePaymentCancelOrFailure(PayEvent payEvent) {
@@ -154,7 +184,7 @@ public class PayService {
         log.info("결제 취소로 인한 재고 회복 요청: 사용자: {}, 상품ID: {}", payEvent.getUsername(), payEvent.getItemId());
     }
 
-    private void handlePaymentSuccess(Pay pay, ProcessRequest processRequest) {
+    private PayStatus handlePaymentSuccess(Pay pay, ProcessRequest processRequest) {
         ProcessEvent processEvent = new ProcessEvent("PAY_COMPLETE", pay.getUsername(), processRequest.getOrderUsername(),
                 processRequest.getItemId(), processRequest.getQuantity(),
                 processRequest.getAmount(),
@@ -166,15 +196,8 @@ public class PayService {
                 processRequest.getAmount(), 0));
 
         log.info("결제 성공: 사용자: {}, 상품ID: {}", pay.getUsername(), processRequest.getItemId());
-    }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void checkPayStatus(String username) {
-        Optional<Pay> findPayOpt = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(username, PayStatus.STOCK_DEDUCTED);
-        if (findPayOpt.isEmpty()) {
-            log.warn("잘못된 결제 상태: 사용자: {}", username);
-            throw new CommonException(ErrorCode.INVALID_PAY_STATUS);
-        }
+        return PayStatus.PAY_COMPLETE;
     }
 
     private Pay findPayByUsernameAndStatus(String username, PayStatus... statuses) {
@@ -186,4 +209,6 @@ public class PayService {
         }
         return null;
     }
+
+
 }

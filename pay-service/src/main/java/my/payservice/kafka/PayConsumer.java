@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Transactional
 @RequiredArgsConstructor
 public class PayConsumer {
+
     private static final String PAY_TOPIC = "pay-topic";
     private static final String PAY_GROUP_ID = "pay-group";
 
@@ -26,21 +28,23 @@ public class PayConsumer {
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    @KafkaListener(topics = PAY_TOPIC, groupId = PAY_GROUP_ID, containerFactory = "payEventKafkaListenerContainerFactory")
-    public void consume(PayEvent payEvent) {
-        log.info("Consumed event: {}", payEvent);
+    @KafkaListener(topics = PAY_TOPIC, groupId = PAY_GROUP_ID, containerFactory = "payEventKafkaListenerContainerFactory", batch = "true")
+    public void consume(List<PayEvent> payEvents) {
+        log.info("Consumed {} events", payEvents.size());
 
-        if (processedEventIds.contains(payEvent.getEventId()) || !isValidSequence(payEvent)) {
-            log.warn("Skipping already processed or invalid sequence event: {}", payEvent.getEventId());
-            return;
-        }
+        for (PayEvent payEvent : payEvents) {
+            if (processedEventIds.contains(payEvent.getEventId()) || !isValidSequence(payEvent)) {
+                log.warn("Skipping already processed or invalid sequence event: {}", payEvent.getEventId());
+                continue;
+            }
 
-        try {
-            processEvent(payEvent);
-            processedEventIds.add(payEvent.getEventId());
-            updateLastProcessedSequence(payEvent);
-        } catch (Exception e) {
-            log.error("Failed to process event: {}", payEvent, e);
+            try {
+                processEvent(payEvent);
+                processedEventIds.add(payEvent.getEventId());
+                updateLastProcessedSequence(payEvent);
+            } catch (Exception e) {
+                log.error("Failed to process event: {}", payEvent, e);
+            }
         }
     }
 
