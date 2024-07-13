@@ -27,7 +27,7 @@ public class PayConsumer {
     private final ConcurrentHashMap<String, AtomicLong> lastProcessedSequence = new ConcurrentHashMap<>();
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     @KafkaListener(topics = PAY_TOPIC, groupId = PAY_GROUP_ID, containerFactory = "payEventKafkaListenerContainerFactory", batch = "true")
     public void consume(List<PayEvent> payEvents) {
         log.info("Consumed {} events", payEvents.size());
@@ -55,7 +55,7 @@ public class PayConsumer {
         return currentSequence > lastSequence.get();
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public void processEvent(PayEvent payEvent) {
         switch (payEvent.getStatus()) {
             case "STOCK_DEDUCT_SYNCED"->

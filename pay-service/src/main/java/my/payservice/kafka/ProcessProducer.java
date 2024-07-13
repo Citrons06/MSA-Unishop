@@ -24,7 +24,7 @@ public class ProcessProducer {
 
     private final ConcurrentHashMap<String, AtomicLong> sequenceNumbers = new ConcurrentHashMap<>();
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public void sendProcessEvent(ProcessEvent processEvent) {
         try {
             String key = processEvent.getUsername() + ":" + processEvent.getItemId();

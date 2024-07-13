@@ -9,8 +9,10 @@ import my.orderservice.order.entity.OrderStatus;
 import my.orderservice.order.repository.OrderRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -31,12 +33,10 @@ public class OrderConsumer {
     private final ConcurrentHashMap<String, AtomicLong> lastProcessedSequence = new ConcurrentHashMap<>();
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     @KafkaListener(topics = ORDER_TOPIC, groupId = ORDER_GROUP_ID, containerFactory = "processKafkaListenerContainerFactory", concurrency = "3", batch = "true")
     public void consume(List<ProcessEvent> events) {
         log.info("Consumed {} events", events.size());
-
-        List<Order> ordersToSave = new ArrayList<>();
 
         for (ProcessEvent processEvent : events) {
             if (processedEventIds.contains(processEvent.getEventId()) || !isValidSequence(processEvent)) {
@@ -45,8 +45,7 @@ public class OrderConsumer {
 
             try {
                 if (processEvent.getStatus().equals("ORDER_CREATE")) {
-                    Order order = createOrder(processEvent);
-                    ordersToSave.add(order);
+                    createOrderWithRetry(processEvent);
                 } else {
                     log.error("Invalid event status: {}", processEvent.getStatus());
                 }
@@ -58,21 +57,17 @@ public class OrderConsumer {
                 handleProcessingError(processEvent);
             }
         }
-
-        if (!ordersToSave.isEmpty()) {
-            orderRepository.saveAll(ordersToSave);
-            log.info("Saved {} orders", ordersToSave.size());
-        }
     }
 
-    private boolean isValidSequence(ProcessEvent processEvent) {
-        String key = processEvent.getUsername();
-        long currentSequence = processEvent.getSequenceNumber();
-        AtomicLong lastSequence = lastProcessedSequence.computeIfAbsent(key, k -> new AtomicLong(0));
-        return currentSequence > lastSequence.get();
+    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createOrderWithRetry(ProcessEvent processEvent) {
+        Order order = createOrder(processEvent);
+        orderRepository.save(order);
+        log.info("주문이 성공적으로 저장되었습니다. 주문자: {}", processEvent.getOrderUsername());
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional
     public Order createOrder(ProcessEvent processEvent) {
         log.info("주문이 생성됩니다. 사용자: {}, 상품ID: {}", processEvent.getOrderUsername(), processEvent.getItemId());
         try {
@@ -92,6 +87,13 @@ public class OrderConsumer {
             log.error("주문 생성 중 오류 발생: ", e);
             throw e;
         }
+    }
+
+    private boolean isValidSequence(ProcessEvent processEvent) {
+        String key = processEvent.getUsername();
+        long currentSequence = processEvent.getSequenceNumber();
+        AtomicLong lastSequence = lastProcessedSequence.computeIfAbsent(key, k -> new AtomicLong(0));
+        return currentSequence > lastSequence.get();
     }
 
     private void updateLastProcessedSequence(ProcessEvent processEvent) {

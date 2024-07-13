@@ -1,3 +1,4 @@
+/*
 package my.payservice.kafka;
 
 import lombok.RequiredArgsConstructor;
@@ -86,3 +87,4 @@ public class ProcessConsumer {
         log.error("Error processing event: {}", processEvent);
     }
 }
+*/

@@ -23,8 +23,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -41,7 +41,7 @@ public class PayService {
     private final RetryRegistry retryRegistry;
     private final OrderProcessingService orderProcessingService;
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     @DistributedLock(key = "'stock:' + #payRequest.itemId", waitTime = 5, leaseTime = 10)
     @CachePut(value = "payStatus", key = "#payRequest.username")
     public ResponseEntity<?> initiatePayment(PayRequest payRequest) {
@@ -63,8 +63,8 @@ public class PayService {
         }
     }
 
-    @DistributedLock(key = "'payment:' + #username", waitTime = 5, leaseTime = 10)
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @DistributedLock(key = "'payment:' + #processRequest.itemId", waitTime = 5, leaseTime = 10)
+    @Transactional
     @CachePut(value = "payStatus", key = "#username")
     public PayStatus processPayment(ProcessRequest processRequest, String username) {
         Retry retry = retryRegistry.retry("processPayment");
@@ -78,7 +78,9 @@ public class PayService {
                 if (Math.random() <= 0.2) {
                     return handlePaymentFailure(processRequest, username);
                 } else {
-                    return handlePaymentSuccess(pay, processRequest);
+                    PayStatus payStatus = updatePaymentStatus(pay, processRequest);
+                    createOrderAsync(processRequest, username);  // 비동기 주문 생성
+                    return payStatus;
                 }
             } catch (CommonException e) {
                 if (e.getErrorCode() == ErrorCode.NOT_ENOUGH_STOCK) {
@@ -100,7 +102,7 @@ public class PayService {
     }
 
     @CachePut(value = "payStatus", key = "#payEvent.username")
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public PayStatus updatePaymentStatus(PayEvent payEvent) {
         Retry retry = retryRegistry.retry("updatePaymentStatus");
         return retry.executeSupplier(() -> {
@@ -124,7 +126,7 @@ public class PayService {
     }
 
     @CacheEvict(value = "payStatus", key = "#username")
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public void checkPayStatus(String username) {
         Optional<Pay> findPayOpt = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(username, PayStatus.STOCK_DEDUCTED);
         if (findPayOpt.isEmpty()) {
@@ -184,13 +186,8 @@ public class PayService {
         log.info("결제 취소로 인한 재고 회복 요청: 사용자: {}, 상품ID: {}", payEvent.getUsername(), payEvent.getItemId());
     }
 
-    private PayStatus handlePaymentSuccess(Pay pay, ProcessRequest processRequest) {
-        ProcessEvent processEvent = new ProcessEvent("PAY_COMPLETE", pay.getUsername(), processRequest.getOrderUsername(),
-                processRequest.getItemId(), processRequest.getQuantity(),
-                processRequest.getAmount(),
-                processRequest.getOrderAddress(), processRequest.getOrderTel());
-        payProducer.sendProcessEvent(processEvent);
-
+    @Transactional
+    public PayStatus updatePaymentStatus(Pay pay, ProcessRequest processRequest) {
         updatePaymentStatus(new PayEvent("PAY_COMPLETE", pay.getUsername(),
                 processRequest.getItemId(), processRequest.getQuantity(),
                 processRequest.getAmount(), 0));
@@ -198,6 +195,15 @@ public class PayService {
         log.info("결제 성공: 사용자: {}, 상품ID: {}", pay.getUsername(), processRequest.getItemId());
 
         return PayStatus.PAY_COMPLETE;
+    }
+
+    public void createOrderAsync(ProcessRequest processRequest, String username) {
+        ProcessEvent processEvent = new ProcessEvent("ORDER_CREATE", username, processRequest.getOrderUsername(),
+                processRequest.getItemId(), processRequest.getQuantity(),
+                processRequest.getAmount(),
+                processRequest.getOrderAddress(), processRequest.getOrderTel());
+        payProducer.sendProcessEvent(processEvent);
+
     }
 
     private Pay findPayByUsernameAndStatus(String username, PayStatus... statuses) {
@@ -209,6 +215,4 @@ public class PayService {
         }
         return null;
     }
-
-
 }

@@ -41,7 +41,7 @@ public class InventoryService {
             Boolean.class
     );
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     @DistributedLock(key = "'inventory:' + #itemId", timeout = 5000)
     public boolean updateInventory(Long itemId, int quantityChange) {
         String key = INVENTORY_KEY_PREFIX + itemId;
@@ -63,7 +63,7 @@ public class InventoryService {
         }
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public int getStock(Long itemId) {
         String key = INVENTORY_KEY_PREFIX + itemId;
         Integer stock = redisTemplate.opsForValue().get(key);
@@ -74,14 +74,14 @@ public class InventoryService {
         return stock;
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public void setStock(Long itemId, Integer quantity) {
         String key = INVENTORY_KEY_PREFIX + itemId;
         redisTemplate.opsForValue().set(key, quantity);
         log.info("재고 설정: 상품 ID {}, 수량 {}", itemId, quantity);
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public void updateStock(Long itemId, int quantity) {
         String key = INVENTORY_KEY_PREFIX + itemId;
         Integer currentQuantity = redisTemplate.opsForValue().get(key);
@@ -95,7 +95,7 @@ public class InventoryService {
         redisTemplate.opsForValue().set(key, newQuantity);
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public void deleteStock(Long itemId) {
         String key = INVENTORY_KEY_PREFIX + itemId;
         Boolean result = redisTemplate.delete(key);
@@ -106,7 +106,7 @@ public class InventoryService {
         }
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public List<InventoryResponseDto> getStockList() {
         Set<String> keys = redisTemplate.keys(INVENTORY_KEY_PREFIX + "*");
         return Objects.requireNonNull(keys).stream()
@@ -119,7 +119,7 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public Map<Long, Integer> getStockMap(List<Long> itemIds) {
         List<String> keys = itemIds.stream()
                 .map(id -> INVENTORY_KEY_PREFIX + id)

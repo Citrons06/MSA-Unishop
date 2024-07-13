@@ -40,7 +40,7 @@ public class PayApiController {
     @PostMapping("/process")
     @CircuitBreaker(name = "payServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     public ResponseEntity<?> processPayment(@RequestBody ProcessRequest request) {
-        // PAY_START 상태의 결제가 없으면 에러 발생
+        // STOCK_DEDUCT 상태의 결제가 없으면 에러 발생
         try {
             UserDto member = userAdapter.getMember(request.getUsername());
             payService.checkPayStatus(member.getUsername());

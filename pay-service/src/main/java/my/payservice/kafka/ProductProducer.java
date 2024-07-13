@@ -22,7 +22,7 @@ public class ProductProducer {
 
     private final ConcurrentHashMap<String, AtomicLong> sequenceNumbers = new ConcurrentHashMap<>();
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public void sendProductEvent(PayEvent payEvent) {
         try {
             String key = payEvent.getUsername();

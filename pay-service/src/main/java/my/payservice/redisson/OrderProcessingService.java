@@ -15,7 +15,6 @@ import org.redisson.api.RQueue;
 import org.redisson.api.RedissonClient;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +40,6 @@ public class OrderProcessingService {
         orderQueue.add(payRequest);
     }
 
-    @Async
     @Scheduled(fixedRate = 10)
     public void processOrders() {
         RQueue<PayRequest> orderQueue = redissonClient.getQueue(ORDER_QUEUE_KEY);
@@ -76,7 +74,6 @@ public class OrderProcessingService {
     public void processOrder(PayRequest payRequest) {
         Pay pay = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(payRequest.getUsername(), PayStatus.STOCK_CHECKING)
                 .orElseThrow(() -> new CommonException(ErrorCode.PAY_NOT_FOUND));
-
 
         // Redis에서 재고가 이미 감소되었으므로 여기서는 재고 감소 결과를 확인하고 기록
         boolean stockDeductionSuccess = checkAndRecordStockDeduction(payRequest);

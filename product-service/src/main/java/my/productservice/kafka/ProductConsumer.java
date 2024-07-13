@@ -31,7 +31,7 @@ public class ProductConsumer {
     private final ConcurrentHashMap<String, AtomicLong> lastProcessedSequence = new ConcurrentHashMap<>();
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     @KafkaListener(topics = PAY_TOPIC, groupId = PRODUCT_GROUP_ID, containerFactory = "payKafkaListenerContainerFactory", batch = "true")
     public void consume(List<PayEvent> payEvents) {
         log.info("Consumed {} events", payEvents.size());
@@ -72,7 +72,7 @@ public class ProductConsumer {
         return currentSequence > lastSequence.get();
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public PayEvent processEvent(PayEvent payEvent) {
         return switch (payEvent.getStatus()) {
             case "STOCK_DEDUCTED" -> handleStockDeducted(payEvent);
@@ -84,7 +84,8 @@ public class ProductConsumer {
         };
     }
 
-    private PayEvent handleStockDeducted(PayEvent payEvent) {
+    @Transactional
+    public PayEvent handleStockDeducted(PayEvent payEvent) {
         // 실제 판매량 반영
         boolean success = itemWriteService.syncItemSellCount(payEvent.getItemId(), payEvent.getQuantity());
         String status = success ? "STOCK_DEDUCT_SYNCED" : "STOCK_DEDUCT_SYNC_FAILED";
@@ -93,7 +94,7 @@ public class ProductConsumer {
                 payEvent.getQuantity(), payEvent.getAmount(), 0);
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public PayEvent handleStockRecover(PayEvent payEvent) {
         boolean success = itemWriteService.updateQuantityAndSellCount(payEvent.getItemId(), payEvent.getQuantity());
         String status = success ? "STOCK_RECOVER_SUCCESS" : "STOCK_RECOVER_FAILED";

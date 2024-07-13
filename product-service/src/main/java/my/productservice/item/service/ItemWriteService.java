@@ -20,7 +20,7 @@ public class ItemWriteService {
     private final ItemRepository itemRepository;
     private final InventoryService inventoryService;
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     @DistributedLock(key = "'item:' + #itemId", timeout = 5000, retry = 3)
     public boolean updateQuantityAndSellCount(Long itemId, int quantity) {
         try {
@@ -40,7 +40,7 @@ public class ItemWriteService {
         }
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public boolean syncItemSellCount(Long itemId, int quantity) {
         try {
             Item item = itemRepository.findById(itemId)
