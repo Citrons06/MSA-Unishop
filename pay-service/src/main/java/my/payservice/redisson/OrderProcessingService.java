@@ -56,30 +56,20 @@ public class OrderProcessingService {
 
     private void processBatch(List<PayRequest> batch) {
         for (PayRequest payRequest : batch) {
-            String stockKey = STOCK_KEY + payRequest.getItemId();
-            RAtomicLong stock = redissonClient.getAtomicLong(stockKey);
-
-            // 재고 확인 및 감소
-            if (stock.decrementAndGet() >= 0) {
-                processOrder(payRequest);
-            } else {
-                stock.incrementAndGet();
-                failOrder(payRequest);  // 주문 실패 처리
-            }
+            processOrder(payRequest);
         }
     }
 
     @Transactional
     @CachePut(value = "PayStatus", key = "#payRequest.username")
     public void processOrder(PayRequest payRequest) {
-        Pay pay = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(payRequest.getUsername(), PayStatus.STOCK_CHECKING)
+        Pay pay = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(payRequest.getUsername(), PayStatus.STOCK_DEDUCTED)
                 .orElseThrow(() -> new CommonException(ErrorCode.PAY_NOT_FOUND));
 
-        // Redis에서 재고가 이미 감소되었으므로 여기서는 재고 감소 결과를 확인하고 기록
+        // Redis 에서 재고가 이미 감소되었으므로 여기서는 재고 감소 결과를 확인하고 기록
         boolean stockDeductionSuccess = checkAndRecordStockDeduction(payRequest);
 
         if (stockDeductionSuccess) {
-            updatePayStatus(pay, PayStatus.STOCK_DEDUCTED);
             // 재고 감소 성공 이벤트 발송 (다른 서비스와 동기화)
             PayEvent stockDeductedEvent = createStockDeductedEvent(payRequest);
             productProducer.sendProductEvent(stockDeductedEvent);
@@ -115,14 +105,6 @@ public class OrderProcessingService {
         String stockKey = STOCK_KEY + payRequest.getItemId();
         RAtomicLong stock = redissonClient.getAtomicLong(stockKey);
         return stock.get() >= 0;
-    }
-
-    @Transactional
-    public void failOrder(PayRequest payRequest) {
-        Pay pay = payRepository.findFirstByUsernameAndPayStatusOrderByCreatedDateDesc(payRequest.getUsername(), PayStatus.STOCK_CHECKING)
-                .orElseThrow(() -> new CommonException(ErrorCode.PAY_NOT_FOUND));
-        updatePayStatus(pay, PayStatus.PAY_FAILED);
-        log.warn("재고 부족으로 주문 실패: 사용자 {}, 상품 ID {}", payRequest.getUsername(), payRequest.getItemId());
     }
 
     private void handleCancelledOrder(PayRequest payRequest) {

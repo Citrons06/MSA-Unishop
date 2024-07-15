@@ -9,7 +9,6 @@ import my.productservice.inventory.service.InventoryService;
 import my.productservice.item.entity.Item;
 import my.productservice.item.repository.ItemRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -21,7 +20,7 @@ public class ItemWriteService {
     private final InventoryService inventoryService;
 
     @Transactional
-    @DistributedLock(key = "'item:' + #itemId", timeout = 5000, retry = 3)
+    //@DistributedLock(key = "'item:' + #itemId", timeout = 5000, retry = 3)
     public boolean updateQuantityAndSellCount(Long itemId, int quantity) {
         try {
             Item item = itemRepository.findById(itemId)

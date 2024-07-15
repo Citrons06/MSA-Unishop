@@ -11,7 +11,6 @@ import my.productservice.item.repository.ItemRepository;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
@@ -42,7 +41,7 @@ public class InventoryService {
     );
 
     @Transactional
-    @DistributedLock(key = "'inventory:' + #itemId", timeout = 5000)
+    //@DistributedLock(key = "'inventory:' + #itemId", timeout = 5000)
     public boolean updateInventory(Long itemId, int quantityChange) {
         String key = INVENTORY_KEY_PREFIX + itemId;
         Boolean result = redisTemplate.execute(updateInventoryScript,
@@ -131,9 +130,5 @@ public class InventoryService {
                         id -> id,
                         id -> values.get(itemIds.indexOf(id))
                 ));
-    }
-
-    public boolean checkStock(Long itemId, int quantity) {
-        return getStock(itemId) >= quantity;
     }
 }

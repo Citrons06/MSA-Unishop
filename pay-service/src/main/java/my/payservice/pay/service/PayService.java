@@ -17,17 +17,19 @@ import my.payservice.pay.entity.PayStatus;
 import my.payservice.kafka.event.PayEvent;
 import my.payservice.pay.repository.PayRepository;
 import my.payservice.redisson.OrderProcessingService;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RedissonClient;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -40,30 +42,45 @@ public class PayService {
     private final ProductProducer productProducer;
     private final RetryRegistry retryRegistry;
     private final OrderProcessingService orderProcessingService;
+    private final RedissonClient redissonClient;
 
     @Transactional
-    @DistributedLock(key = "'stock:' + #payRequest.itemId", waitTime = 5, leaseTime = 10)
+    //@DistributedLock(key = "'stock:' + #payRequest.itemId", waitTime = 5, leaseTime = 10)
     @CachePut(value = "payStatus", key = "#payRequest.username")
     public ResponseEntity<?> initiatePayment(PayRequest payRequest) {
         try {
-            // 결제 정보 임시 저장
-            Pay pay = createInitialPay(payRequest, PayStatus.STOCK_CHECKING);
+            String stockKey = "stock:" + payRequest.getItemId();
+            RAtomicLong stock = redissonClient.getAtomicLong(stockKey);
+
+            if (stock.get() < payRequest.getQuantity()) {
+                Pay pay = createInitialPay(payRequest, PayStatus.PAY_FAILED);
+                payRepository.save(pay);
+                return ResponseEntity.badRequest().body("{\"msg\" : \"재고 부족\"}");
+            }
+
+            if (stock.addAndGet(-payRequest.getQuantity()) < 0) {
+                stock.addAndGet(payRequest.getQuantity()); // 롤백
+                Pay pay = createInitialPay(payRequest, PayStatus.PAY_FAILED);
+                payRepository.save(pay);
+                return ResponseEntity.badRequest().body("{\"msg\" : \"재고 부족\"}");
+            }
+
+            Pay pay = createInitialPay(payRequest, PayStatus.STOCK_DEDUCTED);
             payRepository.save(pay);
 
-            // 주문 큐에 추가
-            orderProcessingService.enqueueOrder(payRequest);
+            CompletableFuture.runAsync(() -> {
+                orderProcessingService.enqueueOrder(payRequest);
+            });
 
             log.info("결제 진입 요청 및 재고 확인 요청: 사용자 {}, 상품 ID {}", payRequest.getUsername(), payRequest.getItemId());
-            return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON)
-                    .body("{\"msg\" : \"결제 진입 요청이 접수되었습니다. 재고 확인 중입니다.\"}");
+            return ResponseEntity.accepted().body("{\"msg\" : \"결제 진입 요청 성공\"}");
         } catch (Exception e) {
             log.error("결제 진입 실패", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
-                    .body("{\"msg\" : \"결제 진입에 실패하였습니다.\"}");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"msg\" : \"결제 진입에 실패하였습니다.\"}");
         }
     }
 
-    @DistributedLock(key = "'payment:' + #processRequest.itemId", waitTime = 5, leaseTime = 10)
+    //@DistributedLock(key = "'payment:' + #processRequest.itemId", waitTime = 5, leaseTime = 10)
     @Transactional
     @CachePut(value = "payStatus", key = "#username")
     public PayStatus processPayment(ProcessRequest processRequest, String username) {
@@ -79,7 +96,7 @@ public class PayService {
                     return handlePaymentFailure(processRequest, username);
                 } else {
                     PayStatus payStatus = updatePaymentStatus(pay, processRequest);
-                    createOrderAsync(processRequest, username);  // 비동기 주문 생성
+                    createOrder(processRequest, username);
                     return payStatus;
                 }
             } catch (CommonException e) {
@@ -197,7 +214,7 @@ public class PayService {
         return PayStatus.PAY_COMPLETE;
     }
 
-    public void createOrderAsync(ProcessRequest processRequest, String username) {
+    public void createOrder(ProcessRequest processRequest, String username) {
         ProcessEvent processEvent = new ProcessEvent("ORDER_CREATE", username, processRequest.getOrderUsername(),
                 processRequest.getItemId(), processRequest.getQuantity(),
                 processRequest.getAmount(),
