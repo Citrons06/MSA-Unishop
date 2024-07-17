@@ -15,10 +15,10 @@
             <a href="/"><h1 class="text-xl">Uni</h1></a>
             <nav>
                 <ul class="flex space-x-4">
-                    <li th:if="${username == null}"><a href="/user/login-page" class="hover:text-blue-300">로그인</a></li>
-                    <li th:if="${username == null}"><a href="/user/signup" class="hover:text-blue-300">회원가입</a></li>
-                    <li th:if="${username != null}"><a href="/user/mypage" class="hover:text-blue-300">마이페이지</a></li>
-                    <li th:if="${username != null}"><a href="/cart" class="hover:text-blue-300">장바구니</a></li>
+                    <li th:if="${username == null}"><a href="/user-service/user/login-page" class="hover:text-blue-300">로그인</a></li>
+                    <li th:if="${username == null}"><a href="/user-service/user/signup" class="hover:text-blue-300">회원가입</a></li>
+                    <li th:if="${username != null}"><a href="/user-service/user/mypage" class="hover:text-blue-300">마이페이지</a></li>
+                    <li th:if="${username != null}"><a href="/user-service/cart" class="hover:text-blue-300">장바구니</a></li>
                     <li th:if="${username != null}">
                         <a href="#" onclick="logout()" class="hover:text-blue-300">로그아웃</a>
                     </li>
@@ -29,7 +29,7 @@
             <div class="container mx-auto py-2">
                 <ul class="flex space-x-4">
                     <li th:each="category : ${categories}">
-                        <a th:href="@{/item/list(category=${category.id})}" th:text="${category.categoryName}" class="hover:text-blue-300"></a>
+                        <a th:href="@{/product/list(category=${category.id})}" th:text="${category.categoryName}" class="hover:text-blue-300"></a>
                     </li>
                 </ul>
             </div>

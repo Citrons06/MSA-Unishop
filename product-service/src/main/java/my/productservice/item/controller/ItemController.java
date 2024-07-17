@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @Slf4j
 @Controller
+@RequestMapping("/product")
 @RequiredArgsConstructor
 public class ItemController {
 
@@ -27,7 +29,7 @@ public class ItemController {
     private final InventoryService inventoryService;
     private final CategoryAdminService categoryAdminService;
 
-    @GetMapping("/item/list")
+    @GetMapping("/list")
     public String itemList(@RequestParam(value = "search", required = false) String search,
                            @RequestParam(value = "category", required = false) Long categoryId,
                            @RequestParam(value = "page", defaultValue = "0") int page,
@@ -60,7 +62,7 @@ public class ItemController {
         return "items/itemList";
     }
 
-    @GetMapping("/item/{itemId}")
+    @GetMapping("/{itemId}")
     public String getItem(Model model, @PathVariable Long itemId) {
         ItemResponseDto item = itemReadService.getItem(itemId);
         item.setQuantity(inventoryService.getStock(itemId));
@@ -69,7 +71,7 @@ public class ItemController {
     }
 
     // 상품 상세 화면에서 바로 주문하기
-    @GetMapping("/item/order")
+    @GetMapping("/order")
     public String orderFromItem(Model model, Long itemId) {
         ItemResponseDto item = itemReadService.getItem(itemId);
         item.setQuantity(inventoryService.getStock(itemId));

@@ -12,9 +12,11 @@ import my.userservice.member.service.MemberTestService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
+@RequestMapping("/user/api/internal")
 @RestController
 @RequiredArgsConstructor
 public class MemberInternalApiController {
@@ -22,7 +24,7 @@ public class MemberInternalApiController {
     private final MemberService memberService;
     private final MemberTestService memberTestService;
 
-    @GetMapping("/api/user/internal/{username}")
+    @GetMapping("/{username}")
     public ResponseEntity<?> getMember(@PathVariable("username") String username, HttpServletRequest request) {
         try {
             MemberResponseDto memberResponseDto = memberService.getMember(username);
@@ -36,7 +38,7 @@ public class MemberInternalApiController {
         }
     }
 
-    @GetMapping("/api/user/internal/test/{username}")
+    @GetMapping("/test/{username}")
     public ResponseEntity<?> getTestMember(@PathVariable("username") String username, HttpServletRequest request) {
         try {
             TestMemberSignup testMember = memberTestService.getMember(username);

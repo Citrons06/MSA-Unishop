@@ -14,7 +14,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/user/test")
+@RequestMapping("/user/api/test")
 @RequiredArgsConstructor
 public class MemberApiTestController {
 

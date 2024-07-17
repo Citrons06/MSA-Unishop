@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @FeignClient(name = "product-service")
 public interface ProductAdapter {
 
-    @GetMapping("/api/product/internal")
+    @GetMapping("/product/api/internal")
     ProductDto getItem(@RequestParam("itemId") Long itemId);
 }

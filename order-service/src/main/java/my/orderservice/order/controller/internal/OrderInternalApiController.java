@@ -17,7 +17,7 @@ public class OrderInternalApiController {
 
     private final OrderService orderService;
 
-    @GetMapping("/api/order/internal/list")
+    @GetMapping("/order/api/internal/list")
     public List<OrderResponseDto> orderList(@RequestParam("username") String username) {
         try {
             return orderService.getOrderList(username, 10, 10);

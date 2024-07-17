@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/pay")
+@RequestMapping("/pay/api")
 public class PayApiController {
 
     private final PayService payService;

@@ -13,11 +13,9 @@ import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,10 +27,13 @@ public class InventoryService {
     private final ItemRepository itemRepository;
     private static final String INVENTORY_KEY_PREFIX = "stock:";
 
+    private static final long STOCK_EXPIRATION = 30; // 30일
+
     private final RedisScript<Boolean> updateInventoryScript = RedisScript.of(
             "local current = redis.call('get', KEYS[1]) " +
                     "if current and tonumber(current) + tonumber(ARGV[1]) >= 0 then " +
                     "   redis.call('incrby', KEYS[1], ARGV[1]) " +
+                    "   redis.call('expire', KEYS[1], ARGV[2]) " +  // TTL 설정 추가
                     "   return true " +
                     "else " +
                     "   return false " +
@@ -46,7 +47,8 @@ public class InventoryService {
         String key = INVENTORY_KEY_PREFIX + itemId;
         Boolean result = redisTemplate.execute(updateInventoryScript,
                 Collections.singletonList(key),
-                String.valueOf(quantityChange));
+                String.valueOf(quantityChange),
+                String.valueOf(STOCK_EXPIRATION));
         if (Boolean.TRUE.equals(result)) {
             // Redis 재고 업데이트 성공 시 itemSellCount도 업데이트
             Item item = itemRepository.findById(itemId)
@@ -68,15 +70,21 @@ public class InventoryService {
         Integer stock = redisTemplate.opsForValue().get(key);
         if (stock == null) {
             log.error("재고 정보 없음: 상품 ID {}", itemId);
-            throw new CommonException(ErrorCode.PRODUCT_NOT_FOUND);
+            return 0;
         }
+        // 만료 시간 재설정
+        redisTemplate.expire(key, STOCK_EXPIRATION, TimeUnit.DAYS);
+        log.info("재고 조회: 상품 ID {}, 수량 {}", itemId, stock);
         return stock;
     }
 
     @Transactional
     public void setStock(Long itemId, Integer quantity) {
+        if (quantity < 0) {
+            throw new CommonException(ErrorCode.INVALID_QUANTITY);
+        }
         String key = INVENTORY_KEY_PREFIX + itemId;
-        redisTemplate.opsForValue().set(key, quantity);
+        redisTemplate.opsForValue().set(key, quantity, Duration.ofDays(STOCK_EXPIRATION));
         log.info("재고 설정: 상품 ID {}, 수량 {}", itemId, quantity);
     }
 
@@ -91,7 +99,8 @@ public class InventoryService {
         if (newQuantity < 0) {
             throw new CommonException(ErrorCode.STOCK_NOT_ENOUGH);
         }
-        redisTemplate.opsForValue().set(key, newQuantity);
+        redisTemplate.opsForValue().set(key, newQuantity, Duration.ofDays(STOCK_EXPIRATION));
+        log.info("재고 업데이트: 상품 ID {}, 새 수량 {}", itemId, newQuantity);
     }
 
     @Transactional
@@ -118,17 +127,17 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Map<Long, Integer> getStockMap(List<Long> itemIds) {
         List<String> keys = itemIds.stream()
                 .map(id -> INVENTORY_KEY_PREFIX + id)
                 .collect(Collectors.toList());
         List<Integer> values = redisTemplate.opsForValue().multiGet(keys);
-        return itemIds.stream()
-                .filter(id -> values.get(itemIds.indexOf(id)) != null)
-                .collect(Collectors.toMap(
-                        id -> id,
-                        id -> values.get(itemIds.indexOf(id))
-                ));
+        Map<Long, Integer> result = new HashMap<>();
+        for (int i = 0; i < itemIds.size(); i++) {
+            Integer value = values.get(i);
+            result.put(itemIds.get(i), value != null ? value : 0);
+        }
+        return result;
     }
 }

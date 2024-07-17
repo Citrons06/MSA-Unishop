@@ -20,7 +20,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/order/api")
 @RequiredArgsConstructor
 public class OrderApiController {
 

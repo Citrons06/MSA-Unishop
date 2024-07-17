@@ -9,19 +9,21 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
 @Slf4j
 @Controller
+@RequestMapping("/order")
 @RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
 
     // 주문 내역
-    @GetMapping("/order/list")
+    @GetMapping("/list")
     public String orderList(HttpServletRequest request, Model model,
                             @RequestParam(defaultValue = "0") int page,
                             @RequestParam(defaultValue = "10") int size) {
@@ -33,7 +35,7 @@ public class OrderController {
     }
 
     // 주문 단건 상세 조회
-    @GetMapping("/order/detail/{orderId}")
+    @GetMapping("/detail/{orderId}")
     public String orderDetail(@PathVariable Long orderId, Model model) {
         OrderResponseDto order = orderService.getOrderById(orderId);
         model.addAttribute("order", order);

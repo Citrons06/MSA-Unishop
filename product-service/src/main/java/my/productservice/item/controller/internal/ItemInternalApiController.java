@@ -9,12 +9,14 @@ import my.productservice.exception.ErrorCode;
 import my.productservice.inventory.service.InventoryService;
 import my.productservice.item.dto.ItemInternalResponse;
 import my.productservice.item.dto.ItemResponseDto;
+import my.productservice.item.dto.SoldTimeDto;
 import my.productservice.item.service.ItemReadService;
 import my.productservice.item.service.ItemWriteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
+@RequestMapping("/product/api/internal")
 @RestController
 @RequiredArgsConstructor
 public class ItemInternalApiController {
@@ -23,7 +25,7 @@ public class ItemInternalApiController {
     private final ItemWriteService itemWriteService;
     private final InventoryService inventoryService;
 
-    @GetMapping("/api/product/internal")
+    @GetMapping
     public ResponseEntity<?> getItem(@RequestParam("itemId") Long itemId) {
         try {
             ItemResponseDto itemResponseDto = itemReadService.getItem(itemId);
@@ -38,7 +40,7 @@ public class ItemInternalApiController {
         }
     }
 
-    @PutMapping("/api/product/internal/update-quantity")
+    @PutMapping("/update-quantity")
     @CircuitBreaker(name = "ItemServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     public ResponseEntity<?> updateQuantity(@RequestParam("itemId") Long itemId, @RequestParam("quantity") int quantity
                                             ) {
@@ -52,6 +54,11 @@ public class ItemInternalApiController {
             log.error("Error updating quantity for item with ID: {}", itemId, e);
             throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/sold-time/{itemId}")
+    public SoldTimeDto getSoldTime(@PathVariable("itemId") Long itemId) {
+        return itemReadService.getSoldTime(itemId);
     }
 
     private ItemResponseDto fallbackMethod(Long itemId, int quantity, Throwable throwable) {

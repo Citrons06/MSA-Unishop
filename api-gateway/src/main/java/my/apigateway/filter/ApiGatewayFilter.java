@@ -31,6 +31,10 @@ public class ApiGatewayFilter extends AbstractGatewayFilterFactory<ApiGatewayFil
 
             log.info("Custom PRE filter : request id -> {}", request.getId());
 
+            if ("/".equals(request.getURI().getPath())) {
+                return chain.filter(exchange);
+            }
+
             // JWT 토큰 추출
             String token = jwtUtil.resolveToken(request);
 
@@ -72,20 +76,20 @@ public class ApiGatewayFilter extends AbstractGatewayFilterFactory<ApiGatewayFil
     // 접근 제어 로직
     private boolean isAccessDenied(String path, String role) {
         // 관리자 전용 경로 접근 제어
-        if (path.startsWith("/api/product/admin") && !"ADMIN".equals(role)) {
+        if (path.startsWith("/product/api/admin") && !"ADMIN".equals(role)) {
             return true; // 관리자가 아닌 경우
         }
         // 회원 전용 경로 접근 제어
-        if (path.startsWith("/api/user/mypage") && !"USER".equals(role) && !"ADMIN".equals(role)) {
+        if (path.startsWith("/user-service/user/api/mypage") && !"USER".equals(role) && !"ADMIN".equals(role)) {
             return true; // 회원과 관리자가 아닌 경우
         }
-        if (path.startsWith("/api/user/cart") && !"USER".equals(role) && !"ADMIN".equals(role)) {
+        if (path.startsWith("/user-service/user/api/cart") && !"USER".equals(role) && !"ADMIN".equals(role)) {
             return true; // 회원과 관리자가 아닌 경우
         }
-        if (path.startsWith("/api/order") && !"USER".equals(role) && !"ADMIN".equals(role)) {
+        if (path.startsWith("/order") && !"USER".equals(role) && !"ADMIN".equals(role)) {
             return true; // 회원과 관리자가 아닌 경우
         }
-        if (path.startsWith("/api/pay") && !"USER".equals(role) && !"ADMIN".equals(role)) {
+        if (path.startsWith("/pay") && !"USER".equals(role) && !"ADMIN".equals(role)) {
             return true; // 회원과 관리자가 아닌 경우
         }
         return false;

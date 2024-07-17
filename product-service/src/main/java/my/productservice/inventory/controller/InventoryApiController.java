@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @Controller
-@RequestMapping("/api/product/inventory")
+@RequestMapping("/product/api/inventory")
 @RequiredArgsConstructor
 public class InventoryApiController {
 

@@ -4,13 +4,15 @@ import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.payservice.aop.DistributedLock;
+import my.payservice.adapter.ProductAdapter;
+import my.payservice.adapter.SoldTimeDto;
 import my.payservice.exception.CommonException;
 import my.payservice.exception.ErrorCode;
 import my.payservice.kafka.ProcessProducer;
 import my.payservice.kafka.ProductProducer;
 import my.payservice.kafka.event.ProcessEvent;
 import my.payservice.pay.dto.PayRequest;
+import my.payservice.pay.dto.PayResponse;
 import my.payservice.pay.dto.ProcessRequest;
 import my.payservice.pay.entity.Pay;
 import my.payservice.pay.entity.PayStatus;
@@ -24,10 +26,10 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -43,29 +45,36 @@ public class PayService {
     private final RetryRegistry retryRegistry;
     private final OrderProcessingService orderProcessingService;
     private final RedissonClient redissonClient;
+    private final ProductAdapter productAdapter;
 
     @Transactional
     //@DistributedLock(key = "'stock:' + #payRequest.itemId", waitTime = 5, leaseTime = 10)
     @CachePut(value = "payStatus", key = "#payRequest.username")
     public ResponseEntity<?> initiatePayment(PayRequest payRequest) {
         try {
+            SoldTimeDto soldTime = getSoldTime(payRequest.getItemId());
+
+            if (soldTime.isPreOrder() && LocalDateTime.now().isBefore(soldTime.getPreOrderStartAt())) {
+                return ResponseEntity.badRequest().body("{\"msg\" : \"예약 판매 시작 전입니다.\"}");
+            }
+
             String stockKey = "stock:" + payRequest.getItemId();
             RAtomicLong stock = redissonClient.getAtomicLong(stockKey);
 
             if (stock.get() < payRequest.getQuantity()) {
-                Pay pay = createInitialPay(payRequest, PayStatus.PAY_FAILED);
+                Pay pay = createPay(payRequest, PayStatus.PAY_FAILED);
                 payRepository.save(pay);
                 return ResponseEntity.badRequest().body("{\"msg\" : \"재고 부족\"}");
             }
 
             if (stock.addAndGet(-payRequest.getQuantity()) < 0) {
                 stock.addAndGet(payRequest.getQuantity()); // 롤백
-                Pay pay = createInitialPay(payRequest, PayStatus.PAY_FAILED);
+                Pay pay = createPay(payRequest, PayStatus.PAY_FAILED);
                 payRepository.save(pay);
                 return ResponseEntity.badRequest().body("{\"msg\" : \"재고 부족\"}");
             }
 
-            Pay pay = createInitialPay(payRequest, PayStatus.STOCK_DEDUCTED);
+            Pay pay = createPay(payRequest, PayStatus.STOCK_DEDUCTED);
             payRepository.save(pay);
 
             CompletableFuture.runAsync(() -> {
@@ -109,6 +118,11 @@ public class PayService {
                 return handleGeneralError(e, processRequest, username);
             }
         });
+    }
+
+    @Cacheable(value = "productInfo", key = "#itemId")
+    public SoldTimeDto getSoldTime(Long itemId) {
+        return productAdapter.getSoldTime(itemId);
     }
 
     @Cacheable(value = "payStatus", key = "#username")
@@ -160,7 +174,7 @@ public class PayService {
         };
     }
 
-    private Pay createInitialPay(PayRequest payRequest, PayStatus status) {
+    private Pay createPay(PayRequest payRequest, PayStatus status) {
         return Pay.builder()
                 .amount(payRequest.getAmount())
                 .payStatus(status)
@@ -231,5 +245,13 @@ public class PayService {
             }
         }
         return null;
+    }
+
+    @Transactional(readOnly = true)
+    public PayResponse getLatestPayment(String username) {
+        Pay pay = payRepository.findFirstByUsernameOrderByCreatedDateDesc(username)
+                .orElseThrow(() -> new CommonException(ErrorCode.PAY_NOT_FOUND));
+
+        return new PayResponse(pay);
     }
 }

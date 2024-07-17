@@ -6,6 +6,7 @@ import my.productservice.exception.CommonException;
 import my.productservice.exception.ErrorCode;
 import my.productservice.inventory.entity.Inventory;
 import my.productservice.inventory.repository.InventoryRepository;
+import my.productservice.item.dto.SoldTimeDto;
 import my.productservice.item.entity.Item;
 import my.productservice.item.repository.ItemRepository;
 import my.productservice.item.dto.ItemResponseDto;
@@ -62,8 +63,13 @@ public class ItemReadService {
     }
 
     private int getStock(Long itemId) {
-        Inventory inventory = inventoryRepository.findByItemId(itemId)
-                .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
-        return inventory.getInventoryStockQuantity();
+        return inventoryRepository.findByItemId(itemId)
+                .map(Inventory::getInventoryStockQuantity)
+                .orElse(0);  // 재고 정보가 없으면 0을 반환
+    }
+
+    public SoldTimeDto getSoldTime(Long itemId) {
+        Item item = itemRepository.findItemById(itemId);
+        return new SoldTimeDto(item.isPreOrder(), item.getPreOrderStartAt());
     }
 }

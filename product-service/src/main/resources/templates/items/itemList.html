@@ -16,7 +16,7 @@
 <main class="container mx-auto mt-8">
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-2xl font-bold">상품 목록</h1>
-        <form th:action="@{/item/list}" method="get" class="flex">
+        <form th:action="@{/product-service/product/list}" method="get" class="flex">
             <select class="p-2 border border-gray-300 rounded-l" name="category">
                 <option value="">전체</option>
                 <option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.categoryName}">카테고리</option>
@@ -27,13 +27,13 @@
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <div th:each="item : ${items}" class="bg-white p-4 rounded-lg shadow-lg">
-            <img th:if="${item.hasImages}" th:src="@{|/images/${item.itemImgList[0].imgName}|}" alt="상품 이미지" class="w-full h-auto object-contain mb-4 rounded">
-            <a th:href="@{/item/{id}(id=${item.id})}"><h2 class="text-xl font-bold mb-2" th:text="${item.itemName}">상품 이름</h2></a>
+            <img th:if="${item.hasImages}" th:src="@{|/${item.itemImgList[0].imgUrl}|}" alt="상품 이미지" class="w-full h-auto object-contain mb-4 rounded">
+            <a th:href="@{/product-service/product/{id}(id=${item.itemId})}"><h2 class="text-xl font-bold mb-2" th:text="${item.itemName}">상품 이름</h2></a>
             <p class="text-gray-700 mb-2">가격: <span th:text="${item.price} + '원'">가격</span></p>
             <p class="text-gray-700 mb-2"><span th:text="${item.itemSellStatus}">판매 상태</span></p>
             <div class="flex justify-between items-center">
-                <a th:href="@{/item/{id}(id=${item.id})}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">상세 보기</a>
-                <a th:href="@{/order/{id}(id=${item.id})}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500">주문하기</a>
+                <a th:href="@{/product-service/product/{id}(id=${item.itemId})}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">상세 보기</a>
+                <a th:href="@{/product-service/product/order/{id}(id=${item.itemId})}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500">주문하기</a>
             </div>
         </div>
     </div>

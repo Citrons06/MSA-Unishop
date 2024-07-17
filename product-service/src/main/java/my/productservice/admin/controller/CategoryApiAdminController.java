@@ -13,7 +13,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/product/admin/category")
+@RequestMapping("/product/api/admin/category")
 @RequiredArgsConstructor
 public class CategoryApiAdminController {
 

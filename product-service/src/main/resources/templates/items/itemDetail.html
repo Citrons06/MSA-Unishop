@@ -48,7 +48,7 @@
     function addToCart(id, name, price) {
         const count = document.getElementById('count').value;
         // Send a request to add the item to the cart
-        fetch('/api/cart/add', {
+        fetch('/cart/api/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

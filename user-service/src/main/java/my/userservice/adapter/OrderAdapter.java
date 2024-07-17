@@ -9,6 +9,6 @@ import java.util.List;
 @FeignClient(name = "order-service")
 public interface OrderAdapter {
 
-    @GetMapping("/api/order/internal/list")
+    @GetMapping("/order/api/internal/list")
     List<OrderDto> orderList(@RequestParam("username") String username);
 }

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결제 완료</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <script src="/static/jwt.js"></script>
+</head>
+<body class="bg-gray-100">
+<div class="header">
+    <div th:replace="~{fragments/header :: header(username=${username}, categories=${categories})}"></div>
+</div>
+
+<main class="container mx-auto mt-8">
+    <div class="bg-white p-8 rounded-lg shadow-lg">
+        <h2 class="text-3xl font-bold mb-6 text-green-600">결제 완료</h2>
+        <div th:if="${payment}" class="mb-6">
+            <p class="mb-2"><span class="font-bold">결제 ID:</span> <span th:text="*{payment.id}"></span></p>
+            <p class="mb-2"><span class="font-bold">총 금액:</span> <span th:text="*{payment.amount} + '원'"></span></p>
+            <p class="mb-2"><span class="font-bold">결제 상태:</span> <span th:text="*{payment.payStatus}"></span></p>
+            <p class="mb-2"><span class="font-bold">결제 시간:</span> <span th:text="*{payment.createdDate}"></span></p>
+        </div>
+        <p class="text-lg mb-4">주문 처리 중입니다. 잠시만 기다려 주세요.</p>
+        <a href="/pay-service/pay/status" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            주문 상태 확인하기
+        </a>
+    </div>
+</main>
+
+<footer class="bg-gray-200 text-center p-4 text-sm mt-8">
+    © 2024 Uni. All rights reserved.
+</footer>
+</body>
+</html>

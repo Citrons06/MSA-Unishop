@@ -67,11 +67,6 @@ public class AuthService {
             accessTokenCookie.setPath("/");
             accessTokenCookie.setMaxAge(60 * 60 * 1000); // 1시간
 
-            Cookie refreshTokenCookie = new Cookie("RefreshToken", refreshToken);
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60 * 1000);  // 7일
-
             response.addCookie(accessTokenCookie);
 
             response.setHeader("Authorization", "Bearer " + accessToken);

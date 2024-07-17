@@ -56,7 +56,7 @@ public class MemberController {
             model.addAttribute("member", member);
         } else {
             // 토큰이 유효하지 않은 경우 로그인 페이지로 리다이렉트
-            return "redirect:/user/login-page";
+            return "redirect:/user-service/user/login-page";
         }
         return "member/mypage";
     }
@@ -68,7 +68,7 @@ public class MemberController {
             memberService.updateMember(username, memberRequestDto);
             redirectAttributes.addFlashAttribute("successMessage", "정보가 성공적으로 업데이트되었습니다.");
         } else {
-            return "redirect:/user/mypage";
+            return "redirect:/user-service/user/mypage";
         }
         return "member/mypage";
     }
@@ -78,10 +78,10 @@ public class MemberController {
     public String signup(MemberRequestDto memberRequestDto) {
         try {
             memberService.signup(memberRequestDto);
-            return "redirect:/user/verify-email";
+            return "redirect:/user-service/user/verify-email";
         } catch (Exception e) {
             log.error("Signup failed", e);
-            return "redirect:/user/signup?error";
+            return "redirect:/user-service/user/signup?error";
         }
     }
 
@@ -96,7 +96,7 @@ public class MemberController {
             return "redirect:/";
         } catch (IllegalArgumentException e) {
             log.error("Invalid refresh token", e);
-            return "redirect:/user/login-page?error";
+            return "redirect:/user-service/user/login-page?error";
         }
     }
 }

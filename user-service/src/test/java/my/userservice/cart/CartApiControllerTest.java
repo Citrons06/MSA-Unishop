@@ -47,7 +47,7 @@ public class CartApiControllerTest {
         );
         when(cartService.getCart(anyString())).thenReturn(cartItems);
 
-        mockMvc.perform(get("/api/cart")
+        mockMvc.perform(get("/cart/api")
                         .header("X-User-Name", "username"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json;charset=UTF-8"))
@@ -66,7 +66,7 @@ public class CartApiControllerTest {
         responseDto.setItemsDto(Arrays.asList(cartItemResponseDto));
         when(cartService.addCart(anyString(), any(AddItemCartRequest.class))).thenReturn(responseDto);
 
-        mockMvc.perform(post("/api/cart/add")
+        mockMvc.perform(post("/cart/api/add")
                         .header("X-User-Name", "username")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -82,7 +82,7 @@ public class CartApiControllerTest {
         CartResponseDto responseDto = new CartResponseDto(Arrays.asList());
         when(cartService.removeItem(anyString(), anyLong())).thenReturn(responseDto);
 
-        mockMvc.perform(delete("/api/cart/remove/{itemId}", 1L)
+        mockMvc.perform(delete("/cart/api/remove/{itemId}", 1L)
                         .header("X-User-Name", "username"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json;charset=UTF-8"))
@@ -92,7 +92,7 @@ public class CartApiControllerTest {
     @Test
     @DisplayName("장바구니 비우기")
     void clearCart_ShouldClearCartAndReturnMessage() throws Exception {
-        mockMvc.perform(delete("/api/cart/clear")
+        mockMvc.perform(delete("/cart/api/clear")
                         .header("X-User-Name", "username"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("모든 상품이 장바구니에서 삭제되었습니다."));
@@ -108,7 +108,7 @@ public class CartApiControllerTest {
 
         when(cartService.updateCartItem(anyString(), any(UpdateCartItemRequest.class))).thenReturn(responseDto);
 
-        mockMvc.perform(put("/api/cart/update/{itemId}", 1L)
+        mockMvc.perform(put("/cart/api/update/{itemId}", 1L)
                         .header("X-User-Name", "username")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

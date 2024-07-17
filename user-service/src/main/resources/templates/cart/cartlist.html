@@ -23,7 +23,7 @@
                 <tbody>
                 <tr th:each="item : ${cart.items}">
                     <td class="border-b py-2">
-                        <a th:href="@{/item/{itemId}(itemId=${item.id})}" class="text-blue-500 hover:underline" th:text="${item.itemName}">상품명</a>
+                        <a th:href="@{/product-service/product/{itemId}(itemId=${item.id})}" class="text-blue-500 hover:underline" th:text="${item.itemName}">상품명</a>
                     </td>
                     <td class="border-b py-2" th:text="${item.price} + '원'">가격</td>
                     <td class="border-b py-2">
@@ -38,7 +38,7 @@
             </table>
             <div class="text-right mt-4">
                 <p class="text-lg"><strong>총 금액:</strong> <span th:text="${cart.totalPrice} + '원'"></span></p>
-                <a href="/cart/order" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">주문하기</a>
+                <a href="/user-service/cart/order" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">주문하기</a>
             </div>
         </div>
     </div>
@@ -50,7 +50,7 @@
 
 <script>
     function updateQuantity(itemId, quantity) {
-        axios.put(`/api/cart/update/${itemId}`, {
+        axios.put(`/cart/api/update/${itemId}`, {
             itemId: itemId,
             quantity: quantity
         })
@@ -63,7 +63,7 @@
     }
 
     function removeItem(itemId) {
-        axios.delete(`/api/cart/remove/${itemId}`)
+        axios.delete(`/cart/api/remove/${itemId}`)
             .then(response => {
                 window.location.reload(); // 아이템 제거 후 페이지 새로고침
             })

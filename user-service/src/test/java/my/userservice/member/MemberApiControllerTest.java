@@ -75,7 +75,7 @@ class MemberApiControllerTest {
         String requestBody = "{\"username\":null,\"password\":null,\"memberTel\":null,\"memberEmail\":null,\"city\":null,\"street\":null,\"zipcode\":null,\"role\":\"USER\"}";
 
         // When & Then
-        mockMvc.perform(post("/api/user/signup")
+        mockMvc.perform(post("/user/api/signup")
                         .content(requestBody)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -88,7 +88,7 @@ class MemberApiControllerTest {
     void testVerifyEmail() throws Exception {
         when(memberService.verifyEmail(anyString(), anyString())).thenReturn(true);
 
-        mockMvc.perform(get("/api/user/verify-email")
+        mockMvc.perform(get("/user/api/verify-email")
                         .param("token", "token")
                         .param("email", "email@example.com"))
                 .andExpect(status().isFound())
@@ -100,7 +100,7 @@ class MemberApiControllerTest {
     void testLogin() throws Exception {
         when(authService.login(any(LoginRequestDto.class), any(HttpServletResponse.class))).thenReturn(loginResponseDto);
 
-        mockMvc.perform(post("/api/user/login")
+        mockMvc.perform(post("/user/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequestDto)))
                 .andExpect(status().isOk())
@@ -112,7 +112,7 @@ class MemberApiControllerTest {
     void testLogout() throws Exception {
         doNothing().when(authService).logout(anyString());
 
-        mockMvc.perform(post("/api/user/logout")
+        mockMvc.perform(post("/user/api/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("refreshToken", "token"))))
                 .andExpect(status().isOk())
@@ -125,7 +125,7 @@ class MemberApiControllerTest {
         when(cartService.getCart(anyString())).thenReturn(cartItems);
         when(memberService.getOrder(anyString())).thenReturn(orderDtos);
 
-        mockMvc.perform(get("/api/user/mypage")
+        mockMvc.perform(get("/user/api/mypage")
                         .header("X-User-Name", "username"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -139,7 +139,7 @@ class MemberApiControllerTest {
     void testUpdateMember() throws Exception {
         when(memberService.updateMember(anyString(), any(MemberRequestDto.class))).thenReturn(memberResponseDto);
 
-        mockMvc.perform(patch("/api/user/mypage")
+        mockMvc.perform(patch("/user/api/mypage")
                         .header("X-User-Name", "username")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(memberRequestDto)))
@@ -158,7 +158,7 @@ class MemberApiControllerTest {
         given(authService.refreshAccessToken(refreshToken)).willReturn(authResponse);
 
         // When & Then
-        mockMvc.perform(post("/api/user/refresh")
+        mockMvc.perform(post("/user/api/refresh")
                         .param("refreshToken", refreshToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
