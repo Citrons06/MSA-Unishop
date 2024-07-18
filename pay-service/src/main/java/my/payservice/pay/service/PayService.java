@@ -25,6 +25,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,13 +50,13 @@ public class PayService {
 
     @Transactional
     //@DistributedLock(key = "'stock:' + #payRequest.itemId", waitTime = 5, leaseTime = 10)
-    @CachePut(value = "payStatus", key = "#payRequest.username")
     public ResponseEntity<?> initiatePayment(PayRequest payRequest) {
         try {
             SoldTimeDto soldTime = getSoldTime(payRequest.getItemId());
 
             if (soldTime.isPreOrder() && LocalDateTime.now().isBefore(soldTime.getPreOrderStartAt())) {
-                return ResponseEntity.badRequest().body("{\"msg\" : \"예약 판매 시작 전입니다.\"}");
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"msg\" : \"예약 판매 시작 전입니다.\"}");
             }
 
             String stockKey = "stock:" + payRequest.getItemId();
@@ -64,14 +65,16 @@ public class PayService {
             if (stock.get() < payRequest.getQuantity()) {
                 Pay pay = createPay(payRequest, PayStatus.PAY_FAILED);
                 payRepository.save(pay);
-                return ResponseEntity.badRequest().body("{\"msg\" : \"재고 부족\"}");
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"msg\" : \"재고가 부족합니다.\"}");
             }
 
             if (stock.addAndGet(-payRequest.getQuantity()) < 0) {
                 stock.addAndGet(payRequest.getQuantity()); // 롤백
                 Pay pay = createPay(payRequest, PayStatus.PAY_FAILED);
                 payRepository.save(pay);
-                return ResponseEntity.badRequest().body("{\"msg\" : \"재고 부족\"}");
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"msg\" : \"재고가 부족합니다.\"}");
             }
 
             Pay pay = createPay(payRequest, PayStatus.STOCK_DEDUCTED);
@@ -82,10 +85,12 @@ public class PayService {
             });
 
             log.info("결제 진입 요청 및 재고 확인 요청: 사용자 {}, 상품 ID {}", payRequest.getUsername(), payRequest.getItemId());
-            return ResponseEntity.accepted().body("{\"msg\" : \"결제 진입 요청 성공\"}");
+            return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"msg\" : \"결제 진입 요청 성공\"}");
         } catch (Exception e) {
             log.error("결제 진입 실패", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"msg\" : \"결제 진입에 실패하였습니다.\"}");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"msg\" : \"결제 진입에 실패하였습니다.\"}");
         }
     }
 

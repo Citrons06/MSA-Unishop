@@ -23,7 +23,7 @@ public class ItemWriteService {
     //@DistributedLock(key = "'item:' + #itemId", timeout = 5000, retry = 3)
     public boolean updateQuantityAndSellCount(Long itemId, int quantity) {
         try {
-            Item item = itemRepository.findById(itemId)
+            Item item = itemRepository.findByIdWithLock(itemId)
                     .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
 
             boolean success = inventoryService.updateInventory(itemId, quantity);
@@ -42,12 +42,14 @@ public class ItemWriteService {
     @Transactional
     public boolean syncItemSellCount(Long itemId, int quantity) {
         try {
-            Item item = itemRepository.findById(itemId)
-                    .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
-            item.updateItemSellCount(quantity);
-            itemRepository.save(item);
-            log.info("상품 판매량 동기화 완료: 상품 ID {}, 수량 {}", itemId, quantity);
-            return true;
+            int updatedRows = itemRepository.updateItemSellCount(itemId, quantity);
+            if (updatedRows > 0) {
+                log.info("상품 판매량 동기화 완료: 상품 ID {}, 수량 {}", itemId, quantity);
+                return true;
+            } else {
+                log.warn("상품 판매량 동기화 실패: 상품을 찾을 수 없음. 상품 ID {}", itemId);
+                return false;
+            }
         } catch (Exception e) {
             log.error("상품 판매량 동기화 실패: 상품 ID {}, 수량 {}", itemId, quantity, e);
             return false;

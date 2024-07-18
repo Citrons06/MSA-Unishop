@@ -42,7 +42,7 @@ public class InventoryService {
     );
 
     @Transactional
-    //@DistributedLock(key = "'inventory:' + #itemId", timeout = 5000)
+    //@DistributedLock(key = "'inventory:' + #itemId", timeout = 5000, retry = 3)
     public boolean updateInventory(Long itemId, int quantityChange) {
         String key = INVENTORY_KEY_PREFIX + itemId;
         Boolean result = redisTemplate.execute(updateInventoryScript,
@@ -50,11 +50,7 @@ public class InventoryService {
                 String.valueOf(quantityChange),
                 String.valueOf(STOCK_EXPIRATION));
         if (Boolean.TRUE.equals(result)) {
-            // Redis 재고 업데이트 성공 시 itemSellCount도 업데이트
-            Item item = itemRepository.findById(itemId)
-                    .orElseThrow(() -> new CommonException(ErrorCode.PRODUCT_NOT_FOUND));
-            item.updateItemSellCount(-quantityChange);
-            itemRepository.save(item);
+            itemRepository.updateItemSellCount(itemId, quantityChange);
 
             log.info("재고 및 판매량 업데이트 성공: 상품 ID {}, 변경량 {}", itemId, quantityChange);
             return true;

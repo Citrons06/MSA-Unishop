@@ -21,6 +21,19 @@ public class PayController {
 
     private final PayService payService;
 
+    @PostMapping("/enter")
+    public String enterPayment(@ModelAttribute PayRequest payRequest, RedirectAttributes redirectAttributes) {
+        ResponseEntity<?> responseEntity = payService.initiatePayment(payRequest);
+
+        if (responseEntity.getStatusCode().is2xxSuccessful()) {
+            redirectAttributes.addFlashAttribute("msg", "결제 화면에 진입하였습니다.");
+            return "redirect:/pay-service/pay/form";
+        } else {
+            redirectAttributes.addFlashAttribute("msg", "결제 진입에 실패하였습니다.");
+            return "redirect:/product-service/product/" + payRequest.getItemId();
+        }
+    }
+
     @GetMapping("/form")
     public String showPaymentForm(@RequestParam Long itemId,
                                   @RequestParam String itemName,
@@ -37,20 +50,7 @@ public class PayController {
         model.addAttribute("itemName", itemName);
         model.addAttribute("price", price);
 
-        return "payment";
-    }
-
-    @PostMapping("/enter")
-    public String enterPayment(@ModelAttribute PayRequest payRequest, RedirectAttributes redirectAttributes) {
-        ResponseEntity<?> responseEntity = payService.initiatePayment(payRequest);
-
-        if (responseEntity.getStatusCode().is2xxSuccessful()) {
-            redirectAttributes.addFlashAttribute("msg", "결제 화면에 진입하였습니다.");
-            return "redirect:/pay-service/pay/form";
-        } else {
-            redirectAttributes.addFlashAttribute("msg", "결제 진입에 실패하였습니다.");
-            return "redirect:/product-service/product/" + payRequest.getItemId();
-        }
+        return "pay/payment";
     }
 
     @PostMapping("/process")
