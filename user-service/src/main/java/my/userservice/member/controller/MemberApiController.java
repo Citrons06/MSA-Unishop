@@ -12,6 +12,8 @@ import my.userservice.exception.ErrorCode;
 import my.userservice.member.dto.*;
 import my.userservice.member.service.AuthService;
 import my.userservice.member.service.MemberServiceImpl;
+import my.userservice.util.JwtUtil;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,7 @@ public class MemberApiController {
     private final MemberServiceImpl memberService;
     private final AuthService authService;
     private final CartService cartService;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody MemberRequestDto memberRequestDto) {
@@ -44,7 +47,7 @@ public class MemberApiController {
         try {
             if (memberService.verifyEmail(email, token)) {
                 HttpHeaders headers = new HttpHeaders();
-                headers.add("Location", "/user/join-complete");
+                headers.add("Location", "/user-service/user/signup-complete");
                 return new ResponseEntity<>(headers, HttpStatus.FOUND);
             } else {
                 throw new CommonException(ErrorCode.NOT_AUTHORIZED);
@@ -68,42 +71,74 @@ public class MemberApiController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-        log.info("Received refresh token: {}", refreshToken);
+    public ResponseEntity<?> logout(@RequestBody LoginRequestDto loginRequestDto,
+                                    @RequestHeader("Authorization") String authHeader) {
+        String accessToken = authHeader.replace("Bearer ", "");
+        authService.logout(loginRequestDto, accessToken);
+        return ResponseEntity.ok().contentType(APPLICATION_JSON)
+                .body("{\"msg\" : \"로그아웃 되었습니다.\"}");
+    }
 
-        try {
-            authService.logout(refreshToken);
-            return ResponseEntity.ok().contentType(APPLICATION_JSON)
-                    .body("{\"msg\" : \"로그아웃 되었습니다.\"}");
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid refresh token", e);
-            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
-        }
+    @PostMapping("/logout-all")
+    public ResponseEntity<?> logoutAll(@RequestBody LoginRequestDto loginRequestDto,
+                                       @RequestHeader("Authorization") String authHeader) {
+        String accessToken = authHeader.replace("Bearer ", "");
+        authService.logoutAll(loginRequestDto, accessToken);
+        return ResponseEntity.ok().contentType(APPLICATION_JSON)
+                .body("{\"msg\" : \"모든 기기에서 로그아웃 되었습니다.\"}");
     }
 
     @GetMapping("/mypage")
-    public ResponseEntity<?> getMember(HttpServletRequest request) {
+    public ResponseEntity<?> getMember(HttpServletRequest request,
+                                       @RequestHeader("Authorization") String authHeader) {
         try {
+            String token = authHeader.replace("Bearer ", "");
+
+            // 토큰이 블랙리스트에 있는지 확인
+            if (isTokenBlacklisted(token)) {
+                throw new CommonException(ErrorCode.TOKEN_BLACKLISTED);
+            }
+
             String username = request.getHeader("X-User-Name");
+            if (username == null) {
+                throw new CommonException(ErrorCode.UNAUTHORIZED);
+            }
+
             List<CartItemResponseDto> cart = cartService.getCart(username);
             List<OrderDto> order = memberService.getOrder(username);
 
             return ResponseEntity.ok().body(Map.of("cart", cart, "order", order));
+        } catch (CommonException e) {
+            throw e;
         } catch (Exception e) {
+            log.error("Error in getMember", e);
             throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PatchMapping("/mypage")
     public ResponseEntity<?> updateMember(HttpServletRequest request,
+                                          @RequestHeader("Authorization") String authHeader,
                                           @RequestBody MemberRequestDto memberRequestDto) {
         try {
+            String token = authHeader.replace("Bearer ", "");
+
+            // 토큰이 블랙리스트에 있는지 확인
+            if (isTokenBlacklisted(token)) {
+                throw new CommonException(ErrorCode.TOKEN_BLACKLISTED);
+            }
+
             String username = request.getHeader("X-User-Name");
+            if (username == null) {
+                throw new CommonException(ErrorCode.UNAUTHORIZED);
+            }
+
             MemberResponseDto memberResponseDto = memberService.updateMember(username, memberRequestDto);
             return ResponseEntity.ok().body(memberResponseDto);
+        } catch (CommonException e) {
+            throw e;
         } catch (Exception e) {
-            log.info("Error updating member", e);
+            log.error("Error updating member", e);
             throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
@@ -122,4 +157,7 @@ public class MemberApiController {
         }
     }
 
+    private boolean isTokenBlacklisted(String token) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:access:" + token));
+    }
 }

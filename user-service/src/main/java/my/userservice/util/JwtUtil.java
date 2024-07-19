@@ -6,9 +6,13 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Slf4j
@@ -19,6 +23,12 @@ public class JwtUtil {
     private String secretKey;
 
     private Key key;
+
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public JwtUtil(RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     @PostConstruct
     public void init() {
@@ -62,13 +72,16 @@ public class JwtUtil {
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
-            return true;
-        } catch (JwtException e) {
-            log.error("Invalid JWT token", e);
+            Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+
+            // 블랙리스트 확인
+            String blacklistedToken = redisTemplate.opsForValue().get("blacklist:access:" + token);
+            if (blacklistedToken != null) {
+                return false;
+            }
+
+            return !claims.getBody().getExpiration().before(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
@@ -89,5 +102,16 @@ public class JwtUtil {
         } catch (ExpiredJwtException e) {
             return true;
         }
+    }
+
+    public LocalDateTime getExpirationDateFromToken(String token) {
+        Date expiration = getClaimsFromToken(token).getExpiration();
+        return LocalDateTime.ofInstant(expiration.toInstant(), ZoneId.systemDefault());
+    }
+
+    public long getRemainTimeFromToken(String token) {
+        LocalDateTime expiration = getExpirationDateFromToken(token);
+        LocalDateTime now = LocalDateTime.now();
+        return ChronoUnit.MILLIS.between(now, expiration);
     }
 }

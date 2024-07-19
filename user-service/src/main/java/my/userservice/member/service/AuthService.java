@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -73,7 +75,7 @@ public class AuthService {
             response.setHeader("X-User-Name", username);
             response.setHeader("X-User-Role", role);
 
-            return new LoginResponseDto(username, accessToken);
+            return new LoginResponseDto(username, accessToken, refreshToken);
 
         } catch (Exception e) {
             log.error("Error authenticating user", e);
@@ -81,15 +83,46 @@ public class AuthService {
         }
     }
 
-    public void logout(String refreshToken) {
-        if (jwtUtil.validateToken(refreshToken)) {
-            refreshTokenRepository.deleteByToken(refreshToken);
-            // 만료 시간을 7일로 설정
-            BlackList blackList = new BlackList(refreshToken, LocalDateTime.now());
-            redisTemplate.opsForValue().set("refreshtoken:" + refreshToken, blackList, 7, TimeUnit.DAYS);
-        } else {
-            throw new CommonException(ErrorCode.NOT_AUTHORIZED);
+    public void logout(LoginRequestDto loginRequestDto, String accessToken) {
+        Member member = memberRepository.findByUsername(loginRequestDto.getUsername());
+
+        if (!passwordEncoder.matches(loginRequestDto.getPassword(), member.getPassword())) {
+            throw new CommonException(ErrorCode.NOT_MATCHED);
         }
+
+        if (!jwtUtil.validateToken(accessToken)) {
+            throw new CommonException(ErrorCode.NOT_MATCHED);
+        }
+
+        // 기존 액세스 토큰을 블랙리스트에 추가
+        BlackList blackList = new BlackList(accessToken, jwtUtil.getExpirationDateFromToken(accessToken));
+        redisTemplate.opsForValue().set("blacklist:access:" + accessToken, blackList,
+                jwtUtil.getRemainTimeFromToken(accessToken), TimeUnit.MILLISECONDS);
+    }
+
+    public void logoutAll(LoginRequestDto loginRequestDto, String accessToken) {
+        Member member = memberRepository.findByUsername(loginRequestDto.getUsername());
+
+        if (!passwordEncoder.matches(loginRequestDto.getPassword(), member.getPassword())) {
+            throw new CommonException(ErrorCode.NOT_MATCHED);
+        }
+
+        if (!jwtUtil.validateToken(accessToken)) {
+            throw new CommonException(ErrorCode.NOT_MATCHED);
+        }
+
+        // 기존 액세스 토큰을 블랙리스트에 추가
+        BlackList accessBlackList = new BlackList(accessToken, jwtUtil.getExpirationDateFromToken(accessToken));
+        redisTemplate.opsForValue().set("blacklist:access:" + accessToken, accessBlackList,
+                jwtUtil.getRemainTimeFromToken(accessToken), TimeUnit.MILLISECONDS);
+
+        // 해당 사용자의 모든 리프레시 토큰 삭제 및 블랙리스트에 추가
+        List<RefreshToken> refreshTokens = refreshTokenRepository.findAllByUsername(member.getUsername());
+        for (RefreshToken refreshToken : refreshTokens) {
+            BlackList refreshBlackList = new BlackList(refreshToken.getToken(), LocalDateTime.now().plusDays(7));
+            redisTemplate.opsForValue().set("blacklist:refresh:" + refreshToken.getToken(), refreshBlackList, 7, TimeUnit.DAYS);
+        }
+        refreshTokenRepository.deleteAllByUsername(member.getUsername());
     }
 
     public AuthResponse refreshAccessToken(String refreshToken) {

@@ -60,10 +60,9 @@ public class CartApiControllerTest {
     @Test
     @DisplayName("장바구니에 상품 추가")
     void addItemToCart_ShouldAddItemAndReturnUpdatedCart() throws Exception {
-        AddItemCartRequest request = new AddItemCartRequest(1L, "item1", 100, 2, "AVAILABLE", 10);
+        AddItemCartRequest request = new AddItemCartRequest(1L, "item1", 100, 2);
         CartItemResponseDto cartItemResponseDto = new CartItemResponseDto(1L, "item1", 2, 100);
         CartResponseDto responseDto = new CartResponseDto();
-        responseDto.setItemsDto(Arrays.asList(cartItemResponseDto));
         when(cartService.addCart(anyString(), any(AddItemCartRequest.class))).thenReturn(responseDto);
 
         mockMvc.perform(post("/cart/api/add")
@@ -79,7 +78,7 @@ public class CartApiControllerTest {
     @Test
     @DisplayName("장바구니에서 특정 상품 삭제")
     void removeItemFromCart_ShouldRemoveItemAndReturnUpdatedCart() throws Exception {
-        CartResponseDto responseDto = new CartResponseDto(Arrays.asList());
+        CartResponseDto responseDto = new CartResponseDto();
         when(cartService.removeItem(anyString(), anyLong())).thenReturn(responseDto);
 
         mockMvc.perform(delete("/cart/api/remove/{itemId}", 1L)
@@ -104,7 +103,6 @@ public class CartApiControllerTest {
         UpdateCartItemRequest request = new UpdateCartItemRequest(1L, null, null, 3);
         CartItemResponseDto cartItemResponseDto = new CartItemResponseDto(1L, "item1", 3, 150);
         CartResponseDto responseDto = new CartResponseDto();
-        responseDto.setItemsDto(Arrays.asList(cartItemResponseDto));
 
         when(cartService.updateCartItem(anyString(), any(UpdateCartItemRequest.class))).thenReturn(responseDto);
 

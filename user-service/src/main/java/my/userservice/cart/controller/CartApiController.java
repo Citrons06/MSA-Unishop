@@ -8,6 +8,7 @@ import my.userservice.cart.dto.CartItemResponseDto;
 import my.userservice.cart.dto.CartResponseDto;
 import my.userservice.cart.dto.UpdateCartItemRequest;
 import my.userservice.cart.service.CartService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,7 +53,8 @@ public class CartApiController {
     public ResponseEntity<?> clearCart(HttpServletRequest request) {
         String username = request.getHeader("X-User-Name");
         cartService.clearCart(username);
-        return ResponseEntity.ok("모든 상품이 장바구니에서 삭제되었습니다.");
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
+                .body("{\"msg\" : \"모든 상품이 장바구니에서 삭제되었습니다.\"}");
     }
 
     // 장바구니에 담긴 상품의 수량 업데이트

@@ -12,21 +12,11 @@ public class AddItemCartRequest {
     private String itemName;
     private Integer price;
     private Integer quantity;
-    private String itemSellStatus;
-    private Integer stockQuantity;
 
-    public AddItemCartRequest(Long itemId, int quantity) {
-        this.itemId = itemId;
-        this.quantity = quantity;
-    }
-
-    public AddItemCartRequest(Long itemId, String itemName, Integer price, Integer quantity, String itemSellStatus, Integer stockQuantity) {
+    public AddItemCartRequest(Long itemId, String itemName, Integer price, Integer quantity) {
         this.itemId = itemId;
         this.itemName = itemName;
         this.price = price;
         this.quantity = quantity;
-        this.itemSellStatus = itemSellStatus;
-        this.stockQuantity = stockQuantity;
-
     }
 }

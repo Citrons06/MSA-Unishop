@@ -1,4 +1,4 @@
-package my.productservice.item.dto;
+package my.productservice.item.dto.item;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -47,6 +47,8 @@ public class ItemResponseDto {
                 .map(ItemImgResponseDto::new)
                 .collect(Collectors.toList());
         this.hasImages = !this.itemImgList.isEmpty();
+        this.isPreOrder = item.isPreOrder();
+        this.preOrderStartAt = item.getPreOrderStartAt();
     }
 
     public ItemResponseDto(Long itemId, String itemName, int price, int quantity) {

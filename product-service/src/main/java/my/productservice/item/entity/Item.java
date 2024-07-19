@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import my.productservice.common.entity.BaseEntity;
-import my.productservice.item.dto.ItemRequestDto;
+import my.productservice.item.dto.item.ItemRequestDto;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,6 +46,8 @@ public class Item extends BaseEntity {
         this.itemSellStatus = itemRequestDto.getItemSellStatus();
         this.category = category;
         this.itemSellCount = 0;
+        this.isPreOrder = itemRequestDto.isPreOrder();
+        this.preOrderStartAt = itemRequestDto.getPreOrderStartAt();
     }
 
     public void updateItem(ItemRequestDto itemRequestDto, Category category) {
@@ -53,6 +55,8 @@ public class Item extends BaseEntity {
         this.price = itemRequestDto.getPrice();
         this.itemSellStatus = itemRequestDto.getItemSellStatus();
         this.category = category;
+        this.isPreOrder = itemRequestDto.isPreOrder();
+        this.preOrderStartAt = itemRequestDto.getPreOrderStartAt();
     }
 
     public void updateItemImgs(List<ItemImg> newItemImgs) {

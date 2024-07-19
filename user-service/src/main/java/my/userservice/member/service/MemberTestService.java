@@ -69,7 +69,7 @@ public class MemberTestService {
             response.setHeader("X-User-Role", role);
 
             log.info("Login success: {}", username);
-            return new LoginResponseDto(username, accessToken);
+            return new LoginResponseDto(username, accessToken, refreshToken);
 
         } catch (CommonException e) {
             log.error("CommonException during login for user: {}", username, e);

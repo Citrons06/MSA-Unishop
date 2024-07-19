@@ -2,14 +2,12 @@ package my.productservice.item.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import my.productservice.exception.CommonException;
-import my.productservice.exception.ErrorCode;
 import my.productservice.inventory.entity.Inventory;
 import my.productservice.inventory.repository.InventoryRepository;
-import my.productservice.item.dto.SoldTimeDto;
+import my.productservice.item.dto.item.SoldTimeDto;
 import my.productservice.item.entity.Item;
 import my.productservice.item.repository.ItemRepository;
-import my.productservice.item.dto.ItemResponseDto;
+import my.productservice.item.dto.item.ItemResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;

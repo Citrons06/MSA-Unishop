@@ -30,6 +30,7 @@ public class CartService {
 
     // 장바구니 조회
     public List<CartItemResponseDto> getCart(String username) {
+
         log.info("Entering getCart with username: {}", username);
         Cart cart = redisUtils.get(username, Cart.class);
 

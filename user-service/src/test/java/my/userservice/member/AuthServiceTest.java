@@ -18,6 +18,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -74,11 +76,22 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("로그아웃 시도 - 유효하지 않은 리프레시 토큰으로 실패")
-    void logout_ShouldThrowCommonException_WhenRefreshTokenIsInvalid() {
-        String refreshToken = "invalidRefreshToken";
-        when(jwtUtil.validateToken(refreshToken)).thenReturn(false);
+    @DisplayName("로그아웃 시도 - 유효하지 않은 사용자 정보로 실패")
+    void logout_ShouldThrowCommonException_WhenUserCredentialsAreInvalid() {
+        LoginRequestDto loginRequestDto = new LoginRequestDto("invalidUsername", "invalidPassword");
+        String accessToken = "validAccessToken";
+        when(memberRepository.findByUsername(loginRequestDto.getUsername())).thenReturn(null);
 
-        assertThrows(CommonException.class, () -> authService.logout(refreshToken));
+        assertThrows(CommonException.class, () -> authService.logout(loginRequestDto, accessToken));
+    }
+
+    @Test
+    @DisplayName("전체 로그아웃 시도 - 유효하지 않은 사용자 정보로 실패")
+    void logoutAll_ShouldThrowCommonException_WhenUserCredentialsAreInvalid() {
+        LoginRequestDto loginRequestDto = new LoginRequestDto("invalidUsername", "invalidPassword");
+        String accessToken = "validAccessToken";
+        when(memberRepository.findByUsername(loginRequestDto.getUsername())).thenReturn(null);
+
+        assertThrows(CommonException.class, () -> authService.logoutAll(loginRequestDto, accessToken));
     }
 }

@@ -2,6 +2,7 @@ package my.userservice.member.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import my.userservice.member.dto.LoginRequestDto;
 import my.userservice.member.dto.MemberRequestDto;
 import my.userservice.member.dto.MemberResponseDto;
 import my.userservice.member.service.AuthService;
@@ -87,12 +88,11 @@ public class MemberController {
 
     // 로그아웃
     @PostMapping("/logout")
-    public String logout(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-        log.info("Received refresh token: {}", refreshToken);
-
+    public String logout(@RequestBody LoginRequestDto loginRequestDto,
+                         @RequestHeader("Authorization") String authHeader) {
+        String accessToken = authHeader.replace("Bearer ", "");
         try {
-            authService.logout(refreshToken);
+            authService.logoutAll(loginRequestDto, accessToken);
             return "redirect:/";
         } catch (IllegalArgumentException e) {
             log.error("Invalid refresh token", e);

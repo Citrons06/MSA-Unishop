@@ -11,7 +11,6 @@ public class MemberResponseDto {
     private Long id;
 
     private String username;
-    private String password;
     private String memberTel;
     private String memberEmail;
 
@@ -22,7 +21,6 @@ public class MemberResponseDto {
     public MemberResponseDto(Member member) {
         this.id = member.getId();
         this.username = member.getUsername();
-        this.password = member.getPassword();
         this.memberTel = member.getMemberTel();
         this.memberEmail = member.getMemberEmail();
         this.street = member.getMemberAddress().getStreet();

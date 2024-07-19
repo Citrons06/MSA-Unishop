@@ -1,6 +1,6 @@
 package my.productservice.item;
 
-import my.productservice.item.dto.ItemResponseDto;
+import my.productservice.item.dto.item.ItemResponseDto;
 import my.productservice.item.service.ItemReadService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

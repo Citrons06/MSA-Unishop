@@ -110,13 +110,16 @@ class MemberApiControllerTest {
     @Test
     @DisplayName("로그아웃 성공")
     void testLogout() throws Exception {
-        doNothing().when(authService).logout(anyString());
+        LoginRequestDto loginRequestDto = new LoginRequestDto("testUser", "password123");
+        String accessToken = "validAccessToken";
+        doNothing().when(authService).logout(any(LoginRequestDto.class), anyString());
 
         mockMvc.perform(post("/user/api/logout")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", "token"))))
+                        .content(objectMapper.writeValueAsString(loginRequestDto))
+                        .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(content().string("로그아웃 되었습니다."));
+                .andExpect(jsonPath("$.msg").value("로그아웃 되었습니다."));
     }
 
     @Test

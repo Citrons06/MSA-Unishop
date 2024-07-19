@@ -6,9 +6,10 @@ import my.productservice.admin.service.ItemAdminService;
 import my.productservice.exception.CommonException;
 import my.productservice.exception.ErrorCode;
 import my.productservice.inventory.service.InventoryService;
-import my.productservice.item.dto.CreateItemResponse;
-import my.productservice.item.dto.ItemRequestDto;
-import my.productservice.item.dto.ItemResponseDto;
+import my.productservice.item.dto.item.CreateItemResponse;
+import my.productservice.item.dto.item.ItemRequestDto;
+import my.productservice.item.dto.item.ItemResponseDto;
+import my.productservice.util.AdminOnly;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
@@ -30,6 +31,7 @@ public class ItemApiAdminController {
     private final ItemAdminService itemAdminService;
     private final InventoryService inventoryService;
 
+    @AdminOnly
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createItem(@ModelAttribute ItemRequestDto itemRequestDto,
                                         @RequestPart("itemImgFileList") List<MultipartFile> itemImgFileList,
@@ -48,6 +50,7 @@ public class ItemApiAdminController {
         }
     }
 
+    @AdminOnly
     @GetMapping("/{itemId}")
     public ResponseEntity<?> getItem(@PathVariable("itemId") Long itemId) {
         try {
@@ -60,6 +63,7 @@ public class ItemApiAdminController {
         }
     }
 
+    @AdminOnly
     @PutMapping(value = "/update/{itemId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateItem(@PathVariable("itemId") Long itemId,
                                         @ModelAttribute ItemRequestDto itemRequestDto,
@@ -77,6 +81,7 @@ public class ItemApiAdminController {
         }
     }
 
+    @AdminOnly
     @DeleteMapping("/delete/{itemId}")
     public ResponseEntity<?> deleteItem(@PathVariable("itemId") Long itemId) {
         try {
@@ -93,6 +98,7 @@ public class ItemApiAdminController {
         }
     }
 
+    @AdminOnly
     @GetMapping("/list")
     public ResponseEntity<?> getItems(@RequestParam(value = "page", defaultValue = "0") int page,
                                       @RequestParam(value = "size", defaultValue = "8") int size) {
@@ -102,6 +108,7 @@ public class ItemApiAdminController {
         return ResponseEntity.ok().body(items);
     }
 
+    @AdminOnly
     @GetMapping("/search")
     public ResponseEntity<?> searchItems(@RequestParam(value = "search") String search,
                                          @RequestParam(value = "category", required = false) Long categoryId,

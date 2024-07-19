@@ -14,7 +14,6 @@ import java.util.List;
 public class CartResponseDto {
     private String memberId;
     private List<CartItem> items;
-    private List<CartItemResponseDto> itemsDto;
     private int totalQuantity;
     private int totalPrice;
 
@@ -23,9 +22,5 @@ public class CartResponseDto {
         this.items = cart.getItems();
         this.totalQuantity = cart.getItems().stream().mapToInt(CartItem::getCount).sum();
         this.totalPrice = cart.getItems().stream().mapToInt(item -> item.getPrice() * item.getCount()).sum();
-    }
-
-    public CartResponseDto(List<CartItemResponseDto> items) {
-        this.itemsDto = items;
     }
 }

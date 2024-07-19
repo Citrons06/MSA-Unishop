@@ -31,7 +31,7 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject("[Uni] 회원가입 인증 요청");
             helper.setText("<p>아래 링크를 클릭하여 회원가입을 완료해 주세요.:</p>"
-                    + "<a href='http://localhost:8081/user/api/verify-email?token=" + token + "&email=" + to + "'>Confirm Email</a>", true);
+                    + "<a href='http://localhost:8080/user-service/user/api/verify-email?token=" + token + "&email=" + to + "'>Confirm Email</a>", true);
 
             mailSender.send(message);
             log.info("Email sent to {}", to);

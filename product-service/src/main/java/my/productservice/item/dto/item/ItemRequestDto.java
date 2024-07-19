@@ -1,4 +1,4 @@
-package my.productservice.item.dto;
+package my.productservice.item.dto.item;
 
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import my.productservice.item.entity.ItemSellStatus;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -36,5 +37,6 @@ public class ItemRequestDto {
 
     private boolean isPreOrder;  // 예약 구매 상품 여부
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime preOrderStartAt;  // 예약 구매 시작 시간
 }

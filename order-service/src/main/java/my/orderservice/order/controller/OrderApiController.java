@@ -7,16 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import my.orderservice.exception.CommonException;
 import my.orderservice.exception.ErrorCode;
 import my.orderservice.order.dto.CreateOrderResponse;
-import my.orderservice.order.dto.OrderRequestDto;
 import my.orderservice.order.dto.OrderResponseDto;
 import my.orderservice.order.service.OrderService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController

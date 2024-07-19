@@ -1,4 +1,4 @@
-package my.productservice.item.dto;
+package my.productservice.item.dto.item;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,8 +18,8 @@ public class CreateItemResponse {
     private int price;
     private int quantity;
     private String itemSellStatus;
-    private boolean isPreOrder;  // 예약 구매 상품 여부
-    private LocalDateTime preOrderStartAt;  // 예약 구매 시작 시간
+    private boolean isPreOrder;
+    private LocalDateTime preOrderStartAt;
 
     public CreateItemResponse(Item item, int quantity) {
         this.itemId = item.getId();

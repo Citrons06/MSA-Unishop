@@ -3,8 +3,8 @@ package my.productservice.admin.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import my.productservice.admin.service.CategoryAdminService;
-import my.productservice.item.dto.CategoryResponseDto;
-import my.productservice.item.dto.CategoryRequestDto;
+import my.productservice.item.dto.category.CategoryResponseDto;
+import my.productservice.item.dto.category.CategoryRequestDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

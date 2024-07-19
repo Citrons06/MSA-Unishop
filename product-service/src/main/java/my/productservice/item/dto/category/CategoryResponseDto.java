@@ -1,4 +1,4 @@
-package my.productservice.item.dto;
+package my.productservice.item.dto.category;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

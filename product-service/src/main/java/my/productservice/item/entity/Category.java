@@ -6,8 +6,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import my.productservice.item.dto.CategoryRequestDto;
-import my.productservice.item.dto.CategoryResponseDto;
+import my.productservice.item.dto.category.CategoryRequestDto;
+import my.productservice.item.dto.category.CategoryResponseDto;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -2,9 +2,9 @@
 package my.productservice.item;
 
 import my.productservice.admin.service.ItemAdminService;
-import my.productservice.item.dto.CreateItemResponse;
-import my.productservice.item.dto.ItemRequestDto;
-import my.productservice.item.dto.ItemResponseDto;
+import my.productservice.item.dto.item.CreateItemResponse;
+import my.productservice.item.dto.item.ItemRequestDto;
+import my.productservice.item.dto.item.ItemResponseDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
