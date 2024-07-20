@@ -239,7 +239,6 @@ public class PayService {
                 processRequest.getAmount(),
                 processRequest.getOrderAddress(), processRequest.getOrderTel());
         payProducer.sendProcessEvent(processEvent);
-
     }
 
     private Pay findPayByUsernameAndStatus(String username, PayStatus... statuses) {

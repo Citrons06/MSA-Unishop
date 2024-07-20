@@ -64,7 +64,6 @@ public class OrderConsumer {
     public void createOrderWithRetry(ProcessEvent processEvent) {
         Order order = createOrder(processEvent);
         orderRepository.save(order);
-        log.info("주문이 성공적으로 저장되었습니다. 주문자: {}", processEvent.getOrderUsername());
     }
 
     @Transactional
